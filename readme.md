@@ -4,8 +4,16 @@ A 64bit Windows Service that communicates with an external host to retrieve the 
 Useful for services that are running on a network with a dynamic external ip.
 
 ## Features:
-Updates IIS FTP External Firewall Address if the external ip has changed.
-Notifies an admin of the ipvia email so they may update external DNS settings if required.
+
+- Updates IIS FTP External Firewall Address if the external ip has changed.
+- Notifies an admin of the ipvia email so they may update external DNS settings if required.
+
+### Prerequisites
+
+- [Microsoft .Net 4.7.1+] (https://www.microsoft.com/en-us/download/details.aspx?id=56116)
+
+#### Modules
+- [IIS 8.5+] (https://docs.microsoft.com/en-us/iis/install/installing-iis-85/installing-iis-85-on-windows-server-2012-r2)
 
 ## Installation
 
@@ -18,7 +26,9 @@ To install this service:
 2. Type the following into the command prompt:
    1. InstallUtil.exe "C:\WhatIsMyIp\WhatIsMyIp.exe"
 3. The following prompts will appear and the information gathered stored in the Registry at "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\WhatIsMyIp"
-   1. Service Host: Enter the web address of the service that will respond to a webrequest with the external ip. Expected result is a single string.
+   1. Service Host: Enter the web address of the service that will respond to a webrequest with the external ip.
+       - Expected result is a single string containing the external ip address. Eg. "111.111.111.111"
+       - Modify parsing if another service provides more information or in another format.
    2. Email To: Enter the email address of the person who will be notified when the external ip has changed.
    3. Email From: Enter the email address that will be sending the email.
    4. Email Host: Enter the SMTP server's address.
