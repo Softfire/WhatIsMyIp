@@ -32,10 +32,12 @@ namespace WhatIsMyIp
                 var emailFromIsSet = false;
                 var emailHostIsSet = false;
                 var emailPortIsSet = false;
+                var emailSslIsSet = false;
                 var logFilePathIsSet = false;
                 var watchIntervalIsSet = false;
                 (bool, string) stringResult;
                 (bool, int) intResult;
+                (bool, bool) boolResult;
 
                 // Setup loop.
                 while (setupIsComplete == false)
@@ -95,6 +97,17 @@ namespace WhatIsMyIp
                         }
                     }
 
+                    // Set SSL loop.
+                    while (emailSslIsSet == false)
+                    {
+                        // If input is accepted, assign to property.
+                        if ((boolResult = ConfirmBoolInput(@"Email SSL Enabled: ", @"Set SSL for SMTP email notifications.")).Item1)
+                        {
+                            WhatIsMyIp.EnableSsl = boolResult.Item2;
+                            emailSslIsSet = boolResult.Item1;
+                        }
+                    }
+
                     // Set Log File Path loop.
                     while (logFilePathIsSet == false)
                     {
@@ -136,12 +149,13 @@ namespace WhatIsMyIp
                     Console.WriteLine($@"(3) Email From: {WhatIsMyIp.EmailFrom}");
                     Console.WriteLine($@"(4) Email (SMTP) Host: {WhatIsMyIp.EmailHost}");
                     Console.WriteLine($@"(5) Email (SMTP) Port: {WhatIsMyIp.EmailPort}");
-                    Console.WriteLine($@"(6) Log File Path: {WhatIsMyIp.LogFilePath}");
-                    Console.WriteLine($@"(7) Interval: {WhatIsMyIp.WatchInterval}");
+                    Console.WriteLine($@"(6) Email SSL Enabled: {WhatIsMyIp.EmailPort}");
+                    Console.WriteLine($@"(7) Log File Path: {WhatIsMyIp.LogFilePath}");
+                    Console.WriteLine($@"(8) Interval: {WhatIsMyIp.WatchInterval}");
                     Console.WriteLine();
                     Console.WriteLine($@"Are these settings correct?{Environment.NewLine}" +
                                       $@"Press Enter to continue.{Environment.NewLine}" +
-                                       @"Press 1-7 to reset specific setting.");
+                                       @"Press 1-8 to reset specific setting.");
                     var response = Console.ReadKey();
 
                     // Process response.
@@ -177,10 +191,15 @@ namespace WhatIsMyIp
                     else if (response.Key == ConsoleKey.D6 ||
                              response.Key == ConsoleKey.NumPad6)
                     {
-                        logFilePathIsSet = false;
+                        emailSslIsSet = false;
                     }
                     else if (response.Key == ConsoleKey.D7 ||
                              response.Key == ConsoleKey.NumPad7)
+                    {
+                        logFilePathIsSet = false;
+                    }
+                    else if (response.Key == ConsoleKey.D8 ||
+                             response.Key == ConsoleKey.NumPad8)
                     {
                         watchIntervalIsSet = false;
                     }
@@ -428,7 +447,7 @@ namespace WhatIsMyIp
 
         /// <summary>
         /// Confirm Int Input.
-        /// Confirms string input by reviewing the input and asking for confirmation before continueing.
+        /// Confirms int input by reviewing the input and asking for confirmation before continueing.
         /// Allows user to provide input again if incorrectly provided earlier.
         /// </summary>
         /// <param name="propertyTitle">The property's title. Used prior to the input on input line.</param>
@@ -459,6 +478,52 @@ namespace WhatIsMyIp
             }
 
             return (false, -1);
+        }
+
+        /// <summary>
+        /// Confirm Bool Input.
+        /// Confirms boolean input by reviewing the input and asking for confirmation before continuing.
+        /// Allows user to provide input again if incorrectly provided earlier.
+        /// </summary>
+        /// <param name="propertyTitle">The property's title. Used prior to the input on input line.</param>
+        /// <param name="propertyDescription">The property's description. Defines the requirement.</param>
+        /// <returns>Returns a bool of the input.</returns>
+        private (bool, bool) ConfirmBoolInput(string propertyTitle, string propertyDescription)
+        {
+            // Clear the Console.
+            Console.Clear();
+
+            // Display Setup Header.
+            DisplaySetupHeader();
+
+            // Set property.
+            Console.WriteLine(propertyDescription);
+            Console.Write(propertyTitle);
+
+            var valid = false;
+            var value = false;
+
+            // Process boolean response.
+            do
+            {
+                var input = Console.ReadLine();
+
+                if (string.IsNullOrEmpty(input) == false)
+                {
+                    valid = bool.TryParse(input, out value);
+                }
+            } while (!valid);
+
+            Console.WriteLine($@"Is ({value}) correct?{Environment.NewLine}Press Enter to continue. Any other key to reset setting.");
+            var response = Console.ReadKey();
+
+            if (response.Key == ConsoleKey.Enter)
+            {
+                // Confirmation.
+                return (true, value);
+            }
+
+            return (false, value);
         }
 
         #endregion

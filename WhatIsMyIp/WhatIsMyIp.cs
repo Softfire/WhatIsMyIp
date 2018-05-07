@@ -57,6 +57,11 @@ namespace WhatIsMyIp
         internal static int EmailPort { get; set; }
 
         /// <summary>
+        /// Enable Ssl.
+        /// </summary>
+        internal static bool EnableSsl { get; set; }
+
+        /// <summary>
         /// Log File Path.
         /// </summary>
         internal static string LogFilePath { get; set; } = string.Empty;
@@ -137,7 +142,7 @@ namespace WhatIsMyIp
                         Mail.Send(EmailHost, EmailPort,
                                   EmailTo, EmailFrom,
                                   "What Is My Ip - Error!", $"External IP Web Response was '{WebResponse}'.",
-                                  false);
+                                  EnableSsl);
                     }
                 }
 
@@ -164,7 +169,7 @@ namespace WhatIsMyIp
                         Mail.Send(EmailHost, EmailPort,
                                   EmailTo, EmailFrom,
                                   "What Is My Ip - IP Address Change!", $"External IP changed to: {WebResponse}",
-                                  false);
+                                  EnableSsl);
                         
                         // Write to logs.
                         File.AppendAllText(LogFilePath + $@"{ DateTime.Now:(yyyy-MM-dd)}.log", $@"{DateTime.Now} - External Ip Address has changed to: {WebResponse}{Environment.NewLine}");
