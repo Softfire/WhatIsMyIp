@@ -5,8 +5,14 @@ using Microsoft.Web.Administration;
 
 namespace WhatIsMyIp.Modules
 {
-    public static class IIS
+    public static class IISModule
     {
+        /// <summary>
+        /// Is Enabled.
+        /// Enable to use IIS module and it's methods.
+        /// </summary>
+        public static bool IsEnabled { get; set; }
+
         /// <summary>
         /// Set FTP External Firewall IP.
         /// </summary>

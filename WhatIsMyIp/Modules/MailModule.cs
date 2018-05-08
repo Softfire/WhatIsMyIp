@@ -2,7 +2,7 @@
 
 namespace WhatIsMyIp.Modules
 {
-    public static class Mail
+    public static class MailModule
     {
         /// <summary>
         /// Send.

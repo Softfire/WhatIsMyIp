@@ -35,6 +35,7 @@ namespace WhatIsMyIp
                 var emailSslIsSet = false;
                 var logFilePathIsSet = false;
                 var watchIntervalIsSet = false;
+                var listModules = false;
                 (bool, string) stringResult;
                 (bool, int) intResult;
                 (bool, bool) boolResult;
@@ -46,7 +47,7 @@ namespace WhatIsMyIp
                     while (serviceHostIsSet == false)
                     {
                         // If input is accepted, assign to property.
-                        if ((stringResult = ConfirmStringInput(@"Service Host: ", @"Set service host from which to retrieve the external ip.")).Item1)
+                        if ((stringResult = Support.ConfirmStringInput(@"Service Host: ", @"Set service host from which to retrieve the external ip.", Support.DisplaySetupHeader)).Item1)
                         {
                             WhatIsMyIp.ServiceHost = stringResult.Item2;
                             serviceHostIsSet = stringResult.Item1;
@@ -57,7 +58,7 @@ namespace WhatIsMyIp
                     while (emailToIsSet == false)
                     {
                         // If input is accepted, assign to property.
-                        if ((stringResult = ConfirmStringInput(@"Email To: ", @"Set recipient email address for notifications.")).Item1)
+                        if ((stringResult = Support.ConfirmStringInput(@"Email To: ", @"Set recipient email address for notifications.", Support.DisplaySetupHeader)).Item1)
                         {
                             WhatIsMyIp.EmailTo = stringResult.Item2;
                             emailToIsSet = stringResult.Item1;
@@ -68,7 +69,7 @@ namespace WhatIsMyIp
                     while (emailFromIsSet == false)
                     {
                         // If input is accepted, assign to property.
-                        if ((stringResult = ConfirmStringInput(@"Email From: ", @"Set sender email address for notifications.")).Item1)
+                        if ((stringResult = Support.ConfirmStringInput(@"Email From: ", @"Set sender email address for notifications.", Support.DisplaySetupHeader)).Item1)
                         {
                             WhatIsMyIp.EmailFrom = stringResult.Item2;
                             emailFromIsSet = stringResult.Item1;
@@ -79,7 +80,7 @@ namespace WhatIsMyIp
                     while (emailHostIsSet == false)
                     {
                         // If input is accepted, assign to property.
-                        if ((stringResult = ConfirmStringInput(@"Email (SMTP) Host: ", @"Set SMTP host for email notifications.")).Item1)
+                        if ((stringResult = Support.ConfirmStringInput(@"Email (SMTP) Host: ", @"Set SMTP host for email notifications.", Support.DisplaySetupHeader)).Item1)
                         {
                             WhatIsMyIp.EmailHost = stringResult.Item2;
                             emailHostIsSet = stringResult.Item1;
@@ -90,7 +91,7 @@ namespace WhatIsMyIp
                     while (emailPortIsSet == false)
                     {
                         // If input is accepted, assign to property.
-                        if ((intResult = ConfirmIntInput(@"Email (SMTP) Port: ", @"Set SMTP port for email notifications.")).Item1)
+                        if ((intResult = Support.ConfirmIntInput(@"Email (SMTP) Port: ", @"Set SMTP port for email notifications.", Support.DisplaySetupHeader)).Item1)
                         {
                             WhatIsMyIp.EmailPort = intResult.Item2;
                             emailPortIsSet = intResult.Item1;
@@ -101,7 +102,7 @@ namespace WhatIsMyIp
                     while (emailSslIsSet == false)
                     {
                         // If input is accepted, assign to property.
-                        if ((boolResult = ConfirmBoolInput(@"Email SSL Enabled: ", @"Set SSL for SMTP email notifications.")).Item1)
+                        if ((boolResult = Support.ConfirmBoolInput(@"Email SSL Enabled: ", @"Set SSL for SMTP email notifications.", Support.DisplaySetupHeader)).Item1)
                         {
                             WhatIsMyIp.EnableSsl = boolResult.Item2;
                             emailSslIsSet = boolResult.Item1;
@@ -112,7 +113,7 @@ namespace WhatIsMyIp
                     while (logFilePathIsSet == false)
                     {
                         // If input is accepted, assign to property.
-                        if ((stringResult = ConfirmStringInput(@"Log File Path: ", $@"Set File Path for Logs. Eg. ""C:\{nameof(WhatIsMyIp)}\Logs""")).Item1)
+                        if ((stringResult = Support.ConfirmStringInput(@"Log File Path: ", $@"Set File Path for Logs. Eg. ""C:\{nameof(WhatIsMyIp)}\Logs""", Support.DisplaySetupHeader)).Item1)
                         {
                             // Ensure a trailing slash.
                             if (!stringResult.Item2.EndsWith(Path.DirectorySeparatorChar.ToString()))
@@ -129,18 +130,25 @@ namespace WhatIsMyIp
                     while (watchIntervalIsSet == false)
                     {
                         // If input is accepted, assign to property.
-                        if ((intResult = ConfirmIntInput(@"Interval: ", $@"Set Interval between calls for IP detection in milliseconds.{Environment.NewLine}Eg. 500000 = 5 mins.")).Item1)
+                        if ((intResult = Support.ConfirmIntInput(@"Interval: ", $@"Set Interval between calls for IP detection in milliseconds.{Environment.NewLine}Eg. 500000 = 5 mins.", Support.DisplaySetupHeader)).Item1)
                         {
                             WhatIsMyIp.WatchInterval = intResult.Item2;
                             watchIntervalIsSet = intResult.Item1;
                         }
                     }
 
+                    // Set SSL loop.
+                    while (listModules)
+                    {
+                        ModulesController.ListModules();
+                        listModules = false;
+                    }
+
                     // Clear the Console.
                     Console.Clear();
 
                     // Display Setup Header.
-                    DisplaySetupHeader();
+                    Support.DisplaySetupHeader();
 
                     // Confirm properties.
                     Console.WriteLine(@"Current Settings:");
@@ -152,10 +160,14 @@ namespace WhatIsMyIp
                     Console.WriteLine($@"(6) Email SSL Enabled: {WhatIsMyIp.EmailPort}");
                     Console.WriteLine($@"(7) Log File Path: {WhatIsMyIp.LogFilePath}");
                     Console.WriteLine($@"(8) Interval: {WhatIsMyIp.WatchInterval}");
+                    Console.WriteLine($@"(9) List Available Modules");
                     Console.WriteLine();
                     Console.WriteLine($@"Are these settings correct?{Environment.NewLine}" +
                                       $@"Press Enter to continue.{Environment.NewLine}" +
-                                       @"Press 1-8 to reset specific setting.");
+                                      $@"Press 1-8 to reset specific setting.{Environment.NewLine}" +
+                                       @"Press 9 to view list of modules.");
+
+                    // Read next key press.
                     var response = Console.ReadKey();
 
                     // Process response.
@@ -202,6 +214,11 @@ namespace WhatIsMyIp
                              response.Key == ConsoleKey.NumPad8)
                     {
                         watchIntervalIsSet = false;
+                    }
+                    else if (response.Key == ConsoleKey.D9 ||
+                             response.Key == ConsoleKey.NumPad9)
+                    {
+                        listModules = true;
                     }
                 }
             }
@@ -391,139 +408,6 @@ namespace WhatIsMyIp
             Console.WriteLine(@"Rollback complete.");
 
             base.OnAfterRollback(savedState);
-        }
-
-        #endregion
-
-        #region Support
-
-        /// <summary>
-        /// Display Setup Header.
-        /// Outputs to Console the Setup Header.
-        /// </summary>
-        private void DisplaySetupHeader()
-        {
-            Console.WriteLine(@"##############################################################");
-            Console.WriteLine(@"#          Setup | What Is My Ip | Windows Service           #");
-            Console.WriteLine(@"##############################################################");
-            Console.WriteLine();
-        }
-
-        /// <summary>
-        /// Confirm String Input.
-        /// Confirms string input by reviewing the input and asking for confirmation before continueing.
-        /// Allows user to provide input again if incorrectly provided earlier.
-        /// </summary>
-        /// <param name="propertyTitle">The property's title. Used prior to the input on input line.</param>
-        /// <param name="propertyDescription">The property's description. Defines the requirement.</param>
-        /// <returns>Returns a Tuple{bool, string} defining whether the input was accepted and returns the input value as a string.</returns>
-        private (bool, string) ConfirmStringInput(string propertyTitle, string propertyDescription)
-        {
-            // Clear the Console.
-            Console.Clear();
-
-            // Display Setup Header.
-            DisplaySetupHeader();
-
-            // Set property.
-            Console.WriteLine(propertyDescription);
-            Console.Write(propertyTitle);
-            var input = Console.ReadLine();
-
-            if (string.IsNullOrWhiteSpace(input) == false)
-            {
-                Console.WriteLine($@"Is ({input}) correct?{Environment.NewLine}Press Enter to continue. Any other key to reset setting.");
-                var response = Console.ReadKey();
-
-                if (response.Key == ConsoleKey.Enter)
-                {
-                    // Confirmation.
-                    return (true, input);
-                }
-            }
-
-            return (false, string.Empty);
-        }
-
-        /// <summary>
-        /// Confirm Int Input.
-        /// Confirms int input by reviewing the input and asking for confirmation before continueing.
-        /// Allows user to provide input again if incorrectly provided earlier.
-        /// </summary>
-        /// <param name="propertyTitle">The property's title. Used prior to the input on input line.</param>
-        /// <param name="propertyDescription">The property's description. Defines the requirement.</param>
-        /// <returns>Returns a Tuple{bool, int} defining whether the input was accepted and returns the input value as an int.</returns>
-        private (bool, int) ConfirmIntInput(string propertyTitle, string propertyDescription)
-        {
-            // Clear the Console.
-            Console.Clear();
-
-            // Display Setup Header.
-            DisplaySetupHeader();
-
-            // Set property.
-            Console.WriteLine(propertyDescription);
-            Console.Write(propertyTitle);
-
-            if (int.TryParse(Console.ReadLine(), out var input))
-            {
-                Console.WriteLine($@"Is ({input}) correct?{Environment.NewLine}Press Enter to continue. Any other key to reset setting.");
-                var response = Console.ReadKey();
-
-                if (response.Key == ConsoleKey.Enter)
-                {
-                    // Confirmation.
-                    return (true, input);
-                }
-            }
-
-            return (false, -1);
-        }
-
-        /// <summary>
-        /// Confirm Bool Input.
-        /// Confirms boolean input by reviewing the input and asking for confirmation before continuing.
-        /// Allows user to provide input again if incorrectly provided earlier.
-        /// </summary>
-        /// <param name="propertyTitle">The property's title. Used prior to the input on input line.</param>
-        /// <param name="propertyDescription">The property's description. Defines the requirement.</param>
-        /// <returns>Returns a bool of the input.</returns>
-        private (bool, bool) ConfirmBoolInput(string propertyTitle, string propertyDescription)
-        {
-            // Clear the Console.
-            Console.Clear();
-
-            // Display Setup Header.
-            DisplaySetupHeader();
-
-            // Set property.
-            Console.WriteLine(propertyDescription);
-            Console.Write(propertyTitle);
-
-            var valid = false;
-            var value = false;
-
-            // Process boolean response.
-            do
-            {
-                var input = Console.ReadLine();
-
-                if (string.IsNullOrEmpty(input) == false)
-                {
-                    valid = bool.TryParse(input, out value);
-                }
-            } while (!valid);
-
-            Console.WriteLine($@"Is ({value}) correct?{Environment.NewLine}Press Enter to continue. Any other key to reset setting.");
-            var response = Console.ReadKey();
-
-            if (response.Key == ConsoleKey.Enter)
-            {
-                // Confirmation.
-                return (true, value);
-            }
-
-            return (false, value);
         }
 
         #endregion

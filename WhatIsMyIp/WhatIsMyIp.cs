@@ -24,12 +24,12 @@ namespace WhatIsMyIp
         /// <summary>
         /// New External Ip Address.
         /// </summary>
-        private static IPAddress NewExternalIpAddress { get; set; }
+        internal static IPAddress NewExternalIpAddress { get; set; }
 
         /// <summary>
         /// Current External Ip Address.
         /// </summary>
-        private static IPAddress CurrentExternalIp { get; set; }
+        internal static IPAddress CurrentExternalIp { get; set; }
 
         /// <summary>
         /// Web Response.
@@ -74,7 +74,7 @@ namespace WhatIsMyIp
 
         /// <summary>
         /// What Is My Ip?
-        /// Updates IIS external firewall IP addresses and sends an email when the external IP address changes.
+        /// Retrieves external IP address and processes any enabled modules then sends an email notifying an admin that the external IP address changed.
         /// </summary>
         public WhatIsMyIp()
         {
@@ -139,7 +139,7 @@ namespace WhatIsMyIp
                     if (string.IsNullOrWhiteSpace(WebResponse))
                     {
                         File.AppendAllText(LogFilePath + $@"{ DateTime.Now:(yyyy-MM-dd)}.log", $@"{DateTime.Now} - An error occured: The web response from {ServiceHost} was '{WebResponse}'.{Environment.NewLine}{Environment.NewLine}");
-                        Mail.Send(EmailHost, EmailPort,
+                        MailModule.Send(EmailHost, EmailPort,
                                   EmailTo, EmailFrom,
                                   "What Is My Ip - Error!", $"External IP Web Response was '{WebResponse}'.",
                                   EnableSsl);
@@ -162,11 +162,14 @@ namespace WhatIsMyIp
                     {
                         CurrentExternalIp = NewExternalIpAddress;
 
-                        // Update IIS FTP firewall settings.
-                        IIS.SetFTPExternalFirewallIp(NewExternalIpAddress);
+                        if (ModulesController.IsIisEnabled)
+                        {
+                            // Update IIS FTP firewall settings.
+                            IISModule.SetFTPExternalFirewallIp(NewExternalIpAddress);
+                        }
 
                         // Notify admin of IP change.
-                        Mail.Send(EmailHost, EmailPort,
+                        MailModule.Send(EmailHost, EmailPort,
                                   EmailTo, EmailFrom,
                                   "What Is My Ip - IP Address Change!", $"External IP changed to: {WebResponse}",
                                   EnableSsl);
