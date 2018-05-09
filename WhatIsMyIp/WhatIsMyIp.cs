@@ -2,6 +2,7 @@
 using System.IO;
 using System.Net;
 using System.Security;
+using System.Security.AccessControl;
 using System.ServiceProcess;
 using System.Timers;
 using Microsoft.Win32;
@@ -182,18 +183,23 @@ namespace WhatIsMyIp
                 // Check for a response.
                 if (string.IsNullOrWhiteSpace(WebResponse) == false)
                 {
+                    // If current ip is null, which should not happen unless the registry entry is not set properly,
+                    // then parse the web response and update the registry.
                     if (CurrentExternalIp == null)
                     {
                         CurrentExternalIp = NewExternalIpAddress = IPAddress.Parse(WebResponse);
+                        UpdateCurrentExternalIpRegistryEntry();
                     }
                     else
                     {
                         NewExternalIpAddress = IPAddress.Parse(WebResponse);
                     }
 
+                    // Process new ip, if changed.
                     if (CurrentExternalIp.Equals(NewExternalIpAddress) == false)
                     {
                         CurrentExternalIp = NewExternalIpAddress;
+                        UpdateCurrentExternalIpRegistryEntry();
 
                         if (ModulesController.IsIisEnabled)
                         {
@@ -379,6 +385,59 @@ namespace WhatIsMyIp
 
                     // Update progress.
                     Console.WriteLine(@"Deleting Registry entries...");
+                }
+            }
+            catch (Exception ex)
+            {
+                // Output exception details.
+                if (string.IsNullOrWhiteSpace(LogFilePath) == false)
+                {
+                    File.AppendAllText(LogFilePath + $@"{ DateTime.Now:(yyyy-MM-dd)}.log", $@"{DateTime.Now} - An error occured: {ex}{Environment.NewLine}{Environment.NewLine}");
+                }
+                else
+                {
+                    throw;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Update Current External Ip Registry Entry.
+        /// </summary>
+        internal static void UpdateCurrentExternalIpRegistryEntry()
+        {
+            try
+            {
+                // Update progress.
+                Console.WriteLine(@"Reading Registry for service entry...");
+
+                // Registry setup.
+                using (var hklm = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
+                {
+                    using (var registryEntry = hklm.OpenSubKey($@"SYSTEM\CurrentControlSet\Services\{nameof(WhatIsMyIp)}", true))
+                    {
+                        // Update progress.
+                        Console.WriteLine($@"Registry Entry: ({registryEntry})");
+
+                        // Confirm inputs.
+                        if (registryEntry != null &&
+                            CurrentExternalIp != null)
+                        {
+                            // Set Registry Data.
+                            using (var parameterSubKey = registryEntry.OpenSubKey("Parameters", RegistryRights.SetValue))
+                            {
+                                // Update progress.
+                                Console.WriteLine(@"Updating parameter in Registry for service...");
+
+                                // Update current external ip data in the Parameters subkey.
+                                parameterSubKey?.SetValue(nameof(CurrentExternalIp), CurrentExternalIp);
+
+                                // Update progress.
+                                Console.WriteLine(@"Parameter updated successfully.");
+                                File.AppendAllText(LogFilePath + $@"{ DateTime.Now:(yyyy-MM-dd)}.log", $@"{DateTime.Now} - Registry entry for current external ip was updated. {Environment.NewLine}");
+                            }
+                        }
+                    }
                 }
             }
             catch (Exception ex)
