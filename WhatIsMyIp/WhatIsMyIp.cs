@@ -73,6 +73,15 @@ namespace WhatIsMyIp
         internal static int WatchInterval { get; set; } = 500000;
 
         /// <summary>
+        /// Commands.
+        /// Call through a command prompt to activate special commands. Eg. "sc control WhatIsMyIp 1'.
+        /// </summary>
+        private enum Commands
+        {
+            GetParametersFromRegistry = 1
+        }
+
+        /// <summary>
         /// What Is My Ip?
         /// Retrieves external IP address and processes any enabled modules then sends an email notifying an admin that the external IP address changed.
         /// </summary>
@@ -124,6 +133,30 @@ namespace WhatIsMyIp
         }
 
         /// <summary>
+        /// On Custom Command.
+        /// </summary>
+        /// <param name="command">Intakes an int to identify a unique command to run.</param>
+        protected override void OnCustomCommand(int command)
+        {
+            switch ((Commands)command)
+            {
+                case Commands.GetParametersFromRegistry:
+                    // Pull registry data.
+                    GetRegistrySettings();
+
+                    // Log action.
+                    File.AppendAllText(LogFilePath + $@"{ DateTime.Now:(yyyy-MM-dd)}.log", $@"{DateTime.Now} - Getting settings from Registry...{Environment.NewLine}");
+                    break;
+                default:
+                    // Log action.
+                    File.AppendAllText(LogFilePath + $@"{ DateTime.Now:(yyyy-MM-dd)}.log", $@"{DateTime.Now} - Unknwon command received: ({command}){Environment.NewLine}");
+                    break;
+            }
+
+            base.OnCustomCommand(command);
+        }
+
+        /// <summary>
         /// Process Ip.
         /// </summary>
         /// <param name="source"></param>
@@ -140,9 +173,9 @@ namespace WhatIsMyIp
                     {
                         File.AppendAllText(LogFilePath + $@"{ DateTime.Now:(yyyy-MM-dd)}.log", $@"{DateTime.Now} - An error occured: The web response from {ServiceHost} was '{WebResponse}'.{Environment.NewLine}{Environment.NewLine}");
                         MailModule.Send(EmailHost, EmailPort,
-                                  EmailTo, EmailFrom,
-                                  "What Is My Ip - Error!", $"External IP Web Response was '{WebResponse}'.",
-                                  EnableSsl);
+                                        EmailTo, EmailFrom,
+                                        "What Is My Ip - Error!", $"External IP Web Response was '{WebResponse}'.",
+                                        EnableSsl);
                     }
                 }
 
@@ -222,6 +255,7 @@ namespace WhatIsMyIp
                             int.TryParse(parameters.GetValue(nameof(EmailPort)).ToString(), out var emailPort);
                             var logFilePath = parameters.GetValue(nameof(LogFilePath)).ToString();
                             int.TryParse(parameters.GetValue(nameof(WatchInterval)).ToString(), out var watchInterval);
+                            IPAddress.TryParse(parameters.GetValue(nameof(CurrentExternalIp)).ToString(), out var currentExternalIp);
 
                             if (string.IsNullOrWhiteSpace(serviceHost) == false &&
                                 string.IsNullOrWhiteSpace(emailTo) == false &&
@@ -229,7 +263,8 @@ namespace WhatIsMyIp
                                 string.IsNullOrWhiteSpace(emailHost) == false &&
                                 emailPort > 0 &&
                                 string.IsNullOrWhiteSpace(logFilePath) == false &&
-                                watchInterval > 0)
+                                watchInterval > 0 &&
+                                currentExternalIp != null)
                             {
                                 ServiceHost = serviceHost;
                                 EmailTo = emailTo;
@@ -238,6 +273,7 @@ namespace WhatIsMyIp
                                 EmailPort = emailPort;
                                 LogFilePath = logFilePath;
                                 WatchInterval = watchInterval;
+                                CurrentExternalIp = currentExternalIp;
                             }
                         }
                     }
@@ -294,7 +330,7 @@ namespace WhatIsMyIp
                                 // Update progress.
                                 Console.WriteLine(@"Adding Parameters in Registry...");
                                 
-                                // Create data for the ImagePathParameters subkey.
+                                // Create data for the Parameters subkey.
                                 parameterSubKey?.SetValue(nameof(ServiceHost), ServiceHost);
                                 parameterSubKey?.SetValue(nameof(EmailTo), EmailTo);
                                 parameterSubKey?.SetValue(nameof(EmailFrom), EmailFrom);
@@ -302,6 +338,7 @@ namespace WhatIsMyIp
                                 parameterSubKey?.SetValue(nameof(EmailPort), EmailPort);
                                 parameterSubKey?.SetValue(nameof(LogFilePath), LogFilePath);
                                 parameterSubKey?.SetValue(nameof(WatchInterval), WatchInterval);
+                                parameterSubKey?.SetValue(nameof(CurrentExternalIp), IPAddress.None);
 
                                 // Update progress.
                                 Console.WriteLine(@"Parameters added successfully.");
