@@ -82,7 +82,7 @@ namespace WhatIsMyIp
         /// </summary>
         private enum Commands
         {
-            GetParametersFromRegistry = 1
+            GetParametersFromRegistry = 128
         }
 
         /// <summary>
