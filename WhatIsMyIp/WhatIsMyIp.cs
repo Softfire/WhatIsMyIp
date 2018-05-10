@@ -257,21 +257,22 @@ namespace WhatIsMyIp
 
                 using (var hklm = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
                 {
-                    using (var parameters = hklm.OpenSubKey($@"SYSTEM\CurrentControlSet\Services\{nameof(WhatIsMyIp)}\Parameters", false))
+                    // Retrieve Parameters.
+                    using (var parametersSubKey = hklm.OpenSubKey($@"SYSTEM\CurrentControlSet\Services\{nameof(WhatIsMyIp)}\Parameters", false))
                     {
                         // Update progress.
-                        Console.WriteLine($@"Registry Entry: ({parameters})");
+                        Console.WriteLine($@"Registry Entry: ({parametersSubKey})");
 
-                        if (parameters != null)
+                        if (parametersSubKey != null)
                         {
-                            var serviceHost = parameters.GetValue(nameof(ServiceHost)).ToString();
-                            var emailTo = parameters.GetValue(nameof(EmailTo)).ToString();
-                            var emailFrom = parameters.GetValue(nameof(EmailFrom)).ToString();
-                            var emailHost = parameters.GetValue(nameof(EmailHost)).ToString();
-                            int.TryParse(parameters.GetValue(nameof(EmailPort)).ToString(), out var emailPort);
-                            var logFilePath = parameters.GetValue(nameof(LogFilePath)).ToString();
-                            int.TryParse(parameters.GetValue(nameof(WatchInterval)).ToString(), out var watchInterval);
-                            IPAddress.TryParse(parameters.GetValue(nameof(CurrentExternalIp)).ToString(), out var currentExternalIp);
+                            var serviceHost = parametersSubKey.GetValue(nameof(ServiceHost)).ToString();
+                            var emailTo = parametersSubKey.GetValue(nameof(EmailTo)).ToString();
+                            var emailFrom = parametersSubKey.GetValue(nameof(EmailFrom)).ToString();
+                            var emailHost = parametersSubKey.GetValue(nameof(EmailHost)).ToString();
+                            int.TryParse(parametersSubKey.GetValue(nameof(EmailPort)).ToString(), out var emailPort);
+                            var logFilePath = parametersSubKey.GetValue(nameof(LogFilePath)).ToString();
+                            int.TryParse(parametersSubKey.GetValue(nameof(WatchInterval)).ToString(), out var watchInterval);
+                            IPAddress.TryParse(parametersSubKey.GetValue(nameof(CurrentExternalIp)).ToString(), out var currentExternalIp);
 
                             if (string.IsNullOrWhiteSpace(serviceHost) == false &&
                                 string.IsNullOrWhiteSpace(emailTo) == false &&
@@ -290,6 +291,21 @@ namespace WhatIsMyIp
                                 LogFilePath = logFilePath;
                                 WatchInterval = watchInterval;
                                 CurrentExternalIp = currentExternalIp;
+                            }
+                        }
+                    }
+
+                    // Retrieve Modules.
+                    using (var modulesSubKey = hklm.OpenSubKey($@"SYSTEM\CurrentControlSet\Services\{nameof(WhatIsMyIp)}\Modules", false))
+                    {
+                        // Update progress.
+                        Console.WriteLine($@"Registry Entry: ({modulesSubKey})");
+
+                        if (modulesSubKey != null)
+                        {
+                            if (bool.TryParse(modulesSubKey.GetValue(nameof(IISModule)).ToString(), out var result))
+                            {
+                                IISModule.IsEnabled = result;
                             }
                         }
                     }
@@ -358,7 +374,21 @@ namespace WhatIsMyIp
 
                                 // Update progress.
                                 Console.WriteLine(@"Parameters added successfully.");
-                                File.AppendAllText(LogFilePath + $@"{ DateTime.Now:(yyyy-MM-dd)}.log", $@"{DateTime.Now} - Registry entry created and populated. Entry: {registryEntry}{Environment.NewLine}");
+                                File.AppendAllText(LogFilePath + $@"{ DateTime.Now:(yyyy-MM-dd)}.log", $@"{DateTime.Now} - Registry entry created and populated. Entry: {parameterSubKey}{Environment.NewLine}");
+                            }
+
+                            // Set Registry Data.
+                            using (var modulesSubKey = registryEntry.CreateSubKey("Modules"))
+                            {
+                                // Update progress.
+                                Console.WriteLine(@"Adding Modules in Registry...");
+
+                                // Create data for the Modules subkey.
+                                modulesSubKey?.SetValue(nameof(IISModule), IISModule.IsEnabled);
+
+                                // Update progress.
+                                Console.WriteLine(@"Modules added successfully.");
+                                File.AppendAllText(LogFilePath + $@"{ DateTime.Now:(yyyy-MM-dd)}.log", $@"{DateTime.Now} - Registry entry created and populated. Entry: {modulesSubKey}{Environment.NewLine}");
                             }
                         }
                     }
