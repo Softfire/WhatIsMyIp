@@ -66,6 +66,11 @@ namespace WhatIsMyIp
         internal static string LogFilePath { get; set; } = string.Empty;
 
         /// <summary>
+        /// Service File Path.
+        /// </summary>
+        internal static string ServiceFilePath { get; set; } = string.Empty;
+
+        /// <summary>
         /// Watch Interval.
         /// Amount of time in milliseconds between calls to ProcessIP method.
         /// </summary>
@@ -217,9 +222,9 @@ namespace WhatIsMyIp
 
                         // Notify admin of IP change.
                         MailModule.Send(EmailHost, EmailPort,
-                                  EmailTo, EmailFrom,
-                                  "What Is My Ip - IP Address Change!", $"External IP changed to: {WebResponse}",
-                                  EnableSsl);
+                                        EmailTo, EmailFrom,
+                                        "What Is My Ip - IP Address Change!", $"External IP changed to: {WebResponse}",
+                                        EnableSsl);
                         
                         // Write to logs.
                         File.AppendAllText(LogFilePath + $@"{ DateTime.Now:(yyyy-MM-dd)}.log", $@"{DateTime.Now} - External Ip Address has changed to: {WebResponse}{Environment.NewLine}");
@@ -255,6 +260,24 @@ namespace WhatIsMyIp
 
                 using (var hklm = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
                 {
+                    // Retrieve service path.
+                    using (var serviceSubKey = hklm.OpenSubKey($@"SYSTEM\CurrentControlSet\Services\{nameof(WhatIsMyIp)}", false))
+                    {
+                        // Update progress.
+                        Console.WriteLine($@"Registry Entry: ({serviceSubKey})");
+
+                        if (serviceSubKey != null)
+                        {
+                            var serviceFilePath = serviceSubKey.GetValue("ImagePath").ToString();
+
+                            if (string.IsNullOrWhiteSpace(serviceFilePath) == false)
+                            {
+                                ServiceFilePath = serviceFilePath.Replace("\"", string.Empty);
+                                ServiceFilePath = ServiceFilePath.Replace(@"\" + nameof(WhatIsMyIp) + ".exe", string.Empty);
+                            }
+                        }
+                    }
+
                     // Retrieve Parameters.
                     using (var parametersSubKey = hklm.OpenSubKey($@"SYSTEM\CurrentControlSet\Services\{nameof(WhatIsMyIp)}\Parameters", false))
                     {

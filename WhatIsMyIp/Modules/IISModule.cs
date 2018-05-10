@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using Microsoft.Web.Administration;
@@ -25,18 +26,40 @@ namespace WhatIsMyIp.Modules
                                  .GetChildElement("firewallSupport")
                                  .SetAttributeValue("externalIp4Address", newIpAddress.ToString());
 
-                    var sites = string.Empty;
-
-                    foreach (var site in serverManager.Sites)
+                    // Record updated sites.
+                    if (MailModule.TemplateIISAdditionalDetails.ContainsKey("SITES"))
                     {
+                        MailModule.TemplateIISAdditionalDetails["SITES"] = new Tuple<string, string, string>[serverManager.Sites.Count];
+                    }
+                    else
+                    {
+                        MailModule.TemplateIISAdditionalDetails.Add("SITES", new Tuple<string ,string, string>[serverManager.Sites.Count]);
+                    }
+
+                    // Iterate sites and update ip.
+                    for (var i = 0; i < serverManager.Sites.Count; i++)
+                    {
+                        // Current site.
+                        var site = serverManager.Sites[i];
+
                         if (site.GetChildElement("ftpServer") != null)
                         {
+                            // Get previous ip.
+                            var previousIpAddress = site.GetChildElement("ftpServer")
+                                                        .GetChildElement("firewallSupport")
+                                                        .GetAttributeValue("externalIp4Address").ToString();
+
                             // Configure the external IP address of the firewall.
                             site.GetChildElement("ftpServer")
                                 .GetChildElement("firewallSupport")
                                 .SetAttributeValue("externalIp4Address", newIpAddress.ToString());
 
-                            sites += site.Name + Environment.NewLine;
+                            if (MailModule.TemplateIISAdditionalDetails.ContainsKey("SITES") &&
+                                MailModule.TemplateIISAdditionalDetails["SITES"] is Tuple<string, string, string>[] sites)
+                            {
+                                // Record site.
+                                sites[i] = new Tuple<string, string, string>(site.Name, previousIpAddress, newIpAddress.ToString());
+                            }
 
                             // Log ip address update.
                             File.AppendAllText(WhatIsMyIp.LogFilePath + $@"{ DateTime.Now:(yyyy-MM-dd)}.log", $@"{DateTime.Now} - Updated IIS FTP Site ({site.Name}) External IP Address to: {newIpAddress}{Environment.NewLine}");
@@ -51,10 +74,14 @@ namespace WhatIsMyIp.Modules
                         // Send out email notification.
                         MailModule.Send(WhatIsMyIp.EmailHost, WhatIsMyIp.EmailPort,
                                         WhatIsMyIp.EmailTo, WhatIsMyIp.EmailFrom,
-                                        @"IIS FTP Firewall External Ip Updated!", sites,
+                                        @"IIS FTP Firewall External Ip Updated!", "SITES",
                                         WhatIsMyIp.EnableSsl, MailModule.Templates.IIS);
+
+                        // Send report to admin.
+                        File.AppendAllText(WhatIsMyIp.LogFilePath + $@"{ DateTime.Now:(yyyy-MM-dd)}.log", $@"{DateTime.Now} - Email sent out to: {WhatIsMyIp.EmailTo}{Environment.NewLine}{Environment.NewLine}");
                     }
 
+                    // Update progress.
                     File.AppendAllText(WhatIsMyIp.LogFilePath + $@"{ DateTime.Now:(yyyy-MM-dd)}.log", $@"{DateTime.Now} - Update complete!{Environment.NewLine}{Environment.NewLine}");
                 }
             }

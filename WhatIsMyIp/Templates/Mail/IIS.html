@@ -4,10 +4,41 @@
 <head>
     <meta charset="utf-8" />
     <title>IIS Mail Template</title>
+    <style>
+        table, th, tr, td {
+            border: 1px solid black;
+        }
+        th, td {
+            padding: 5px;
+        }
+        .previousIp {
+            color: red;
+        }
+        .newIp {
+            color: green;
+        }
+    </style>
 </head>
 <body>
     <b>Sites updated:</b>
-    
-    <i>{ADDITIONAL_DETAILS}</i>
+    <table id="Sites">
+        <thead>
+            <tr>
+                <th>Site Name</th>
+                <th>Previous IP</th>
+                <th>New IP</th>
+            </tr>
+        </thead>
+        <tbody>
+            {SITES_DATA}
+        </tbody>
+        <tfoot>
+            <tr>
+                <td>Sites: {NUMBER_OF_SITES}</td>
+                <td></td>
+                <td></td>
+            </tr>
+        </tfoot>
+    </table>
 </body>
 </html>

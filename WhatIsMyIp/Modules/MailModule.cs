@@ -1,5 +1,5 @@
-﻿using System;
-using System.Net.Mail;
+﻿using System.Net.Mail;
+using System.Net.Mime;
 
 namespace WhatIsMyIp.Modules
 {
@@ -24,16 +24,16 @@ namespace WhatIsMyIp.Modules
         /// <param name="template">HTML template to use in email notification.</param>
         /// <returns>Returns a bool indicating whether the message was sent.</returns>
         public static bool Send(string emailHost, int emailHostPort,
-                                 string emailTo, string emailFrom,
-                                 string emailSubject, string emailBody,
-                                 bool useSsl, Templates template = Templates.None)
+                                string emailTo, string emailFrom,
+                                string emailSubject, string emailBody,
+                                bool useSsl, Templates template = Templates.None)
         {
             if (string.IsNullOrWhiteSpace(emailHost) == false &&
                 emailHostPort > 0 &&
                 string.IsNullOrWhiteSpace(emailTo) == false &&
                 string.IsNullOrWhiteSpace(emailFrom) == false &&
                 string.IsNullOrWhiteSpace(emailSubject) == false &&
-                string.IsNullOrWhiteSpace(emailBody) == false)
+                string.IsNullOrEmpty(emailBody) == false)
             {
                 // Create mail client.
                 using (var client = new SmtpClient
@@ -50,7 +50,14 @@ namespace WhatIsMyIp.Modules
                     switch (template)
                     {
                         case Templates.IIS:
-                            mail = new MailMessage(emailFrom, emailTo, emailSubject, TemplateIIS(emailBody));
+                            mail = new MailMessage(emailFrom, emailTo, emailSubject, emailBody)
+                            {
+                                IsBodyHtml = true,
+                                AlternateViews =
+                                {
+                                    AlternateView.CreateAlternateViewFromString(TemplateIIS(), new ContentType("text/html"))
+                                }
+                            };
                             break;
                         default:
                             mail = new MailMessage(emailFrom, emailTo, emailSubject, emailBody);
