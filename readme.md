@@ -36,6 +36,12 @@ To install this service:
    6. Email SSL Enabled: Enter "true" or "false" to enable or disable SSL requirement for emails. Must match SMTP requirements.
    7. Log File Path: Enter the file path for the log files to be saved. Eg. "C:\WhatIsMyIp\Logs"
    8. Interval: Enter the amount of time between calls to the external Service Host in milliseconds. Eg. "500000" is 5 minutes.
-4. Confirm the settings or press a number from 1-8 to re-enter information for that setting.
-5. Once confimed a propmt will appear asking for credentials. These credentials must have rights to read/write from/to the Registry and be able to read wherever the exe is stored. The account must also be able to modify IIS server settings on the local server.
-6. Service should now be up and running. To test, force an ip change for your external ip. Check logs and email for confirmation of updates.
+4. Confirm settings.
+   1. Press a number from 1-8 to re-enter information for that setting.
+   2. Press 9 to list the available Modules.
+5. (Optional) If listing modules, you may enable/disable them by pressing their corresponding number.
+6. Once confimed a prompt will appear asking for credentials.
+   - These credentials must have rights to read/write from/to the Registry and be able to read wherever the service.exe is stored.
+   - The account must also be able to modify IIS server settings on the local server.
+6. Service should now be up and running. To test, force an ip change for your external ip.
+   - Check logs and email for confirmation of updates.
