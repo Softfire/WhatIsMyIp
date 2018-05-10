@@ -1,9 +1,16 @@
-﻿using System.Net.Mail;
+﻿using System;
+using System.Net.Mail;
 
 namespace WhatIsMyIp.Modules
 {
-    public static class MailModule
+    public static partial class MailModule
     {
+        public enum Templates
+        {
+            None,
+            IIS
+        }
+
         /// <summary>
         /// Send.
         /// </summary>
@@ -14,11 +21,12 @@ namespace WhatIsMyIp.Modules
         /// <param name="emailSubject">The mail's subject.</param>
         /// <param name="emailBody">The mail's body.</param>
         /// <param name="useSsl">Flag whether the email host requires SSL.</param>
+        /// <param name="template">HTML template to use in email notification.</param>
         /// <returns>Returns a bool indicating whether the message was sent.</returns>
         public static bool Send(string emailHost, int emailHostPort,
                                  string emailTo, string emailFrom,
                                  string emailSubject, string emailBody,
-                                 bool useSsl)
+                                 bool useSsl, Templates template = Templates.None)
         {
             if (string.IsNullOrWhiteSpace(emailHost) == false &&
                 emailHostPort > 0 &&
@@ -34,9 +42,20 @@ namespace WhatIsMyIp.Modules
                     DeliveryMethod = SmtpDeliveryMethod.Network,
                     UseDefaultCredentials = true,
                     EnableSsl = useSsl
-                }) {
+                })
+                {
+                    MailMessage mail;
+
                     // Create message to send.
-                    var mail = new MailMessage(emailFrom, emailTo, emailSubject, emailBody);
+                    switch (template)
+                    {
+                        case Templates.IIS:
+                            mail = new MailMessage(emailFrom, emailTo, emailSubject, TemplateIIS(emailBody));
+                            break;
+                        default:
+                            mail = new MailMessage(emailFrom, emailTo, emailSubject, emailBody);
+                            break;
+                    }
 
                     // Send message.
                     client.Send(mail);

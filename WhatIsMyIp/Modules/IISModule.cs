@@ -25,6 +25,8 @@ namespace WhatIsMyIp.Modules
                                  .GetChildElement("firewallSupport")
                                  .SetAttributeValue("externalIp4Address", newIpAddress.ToString());
 
+                    var sites = string.Empty;
+
                     foreach (var site in serverManager.Sites)
                     {
                         if (site.GetChildElement("ftpServer") != null)
@@ -34,6 +36,8 @@ namespace WhatIsMyIp.Modules
                                 .GetChildElement("firewallSupport")
                                 .SetAttributeValue("externalIp4Address", newIpAddress.ToString());
 
+                            sites += site.Name + Environment.NewLine;
+
                             // Log ip address update.
                             File.AppendAllText(WhatIsMyIp.LogFilePath + $@"{ DateTime.Now:(yyyy-MM-dd)}.log", $@"{DateTime.Now} - Updated IIS FTP Site ({site.Name}) External IP Address to: {newIpAddress}{Environment.NewLine}");
                         }
@@ -41,6 +45,15 @@ namespace WhatIsMyIp.Modules
 
                     //Commit changes.
                     serverManager.CommitChanges();
+
+                    if (serverManager.Sites.Count > 0)
+                    {
+                        // Send out email notification.
+                        MailModule.Send(WhatIsMyIp.EmailHost, WhatIsMyIp.EmailPort,
+                                        WhatIsMyIp.EmailTo, WhatIsMyIp.EmailFrom,
+                                        @"IIS FTP Firewall External Ip Updated!", sites,
+                                        WhatIsMyIp.EnableSsl, MailModule.Templates.IIS);
+                    }
 
                     File.AppendAllText(WhatIsMyIp.LogFilePath + $@"{ DateTime.Now:(yyyy-MM-dd)}.log", $@"{DateTime.Now} - Update complete!{Environment.NewLine}{Environment.NewLine}");
                 }

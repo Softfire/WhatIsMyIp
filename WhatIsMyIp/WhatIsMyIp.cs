@@ -1,8 +1,6 @@
 ﻿using System;
 using System.IO;
 using System.Net;
-using System.Security;
-using System.Security.AccessControl;
 using System.ServiceProcess;
 using System.Timers;
 using Microsoft.Win32;
@@ -71,7 +69,7 @@ namespace WhatIsMyIp
         /// Watch Interval.
         /// Amount of time in milliseconds between calls to ProcessIP method.
         /// </summary>
-        internal static int WatchInterval { get; set; } = 500000;
+        internal static int WatchInterval { get; set; } = 300000;
 
         /// <summary>
         /// Commands.
@@ -105,7 +103,7 @@ namespace WhatIsMyIp
             Watch.Elapsed += ProcessIp;
             
             // Create log directory.
-            CreateDirectory(LogFilePath);
+            Support.CreateDirectory(LogFilePath);
         }
 
         /// <summary>
@@ -494,41 +492,6 @@ namespace WhatIsMyIp
             }
         }
 
-        /// <summary>
-        /// Create Directory.
-        /// Creates a directory to store the log files.
-        /// </summary>
-        /// <param name="filePath">The file path of where the log is to be created.</param>
-        public static void CreateDirectory(string filePath)
-        {
-            try
-            {
-                if (string.IsNullOrWhiteSpace(filePath) == false)
-                {
-                    var fi = new FileInfo(filePath);
-
-                    if (fi.Directory != null &&
-                        fi.Directory.Exists == false &&
-                        fi.DirectoryName != null)
-                    {
-                        Directory.CreateDirectory(fi.DirectoryName);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                if (ex is ArgumentNullException ||
-                    ex is SecurityException ||
-                    ex is ArgumentException ||
-                    ex is UnauthorizedAccessException ||
-                    ex is PathTooLongException ||
-                    ex is NotSupportedException ||
-                    ex is DirectoryNotFoundException ||
-                    ex is IOException)
-                {
-                    File.AppendAllText(LogFilePath + $@"{ DateTime.Now:(yyyy-MM-dd)}.log", $@"{DateTime.Now} - An error occured: {ex}{Environment.NewLine}{Environment.NewLine}");
-                }
-            }
-        }
+        
     }
 }

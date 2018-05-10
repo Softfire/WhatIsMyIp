@@ -75,6 +75,7 @@
     <Reference Include="System.ServiceProcess" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Modules\MailModule.Template.IIS.cs" />
     <Compile Include="Support.cs" />
     <Compile Include="Modules\IISModule.cs" />
     <Compile Include="Modules\MailModule.cs" />
@@ -118,6 +119,11 @@
       <ProductName>.NET Framework 3.5 SP1</ProductName>
       <Install>false</Install>
     </BootstrapperPackage>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Templates\Mail\IIS.html">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

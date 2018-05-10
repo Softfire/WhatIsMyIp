@@ -130,7 +130,7 @@ namespace WhatIsMyIp
                     while (watchIntervalIsSet == false)
                     {
                         // If input is accepted, assign to property.
-                        if ((intResult = Support.ConfirmIntInput(@"Interval: ", $@"Set Interval between calls for IP detection in milliseconds.{Environment.NewLine}Eg. 500000 = 5 mins.", Support.DisplaySetupHeader)).Item1)
+                        if ((intResult = Support.ConfirmIntInput(@"Interval: ", $@"Set Interval between calls for IP detection in milliseconds.{Environment.NewLine}Eg. 300000 = 5 mins.", Support.DisplaySetupHeader)).Item1)
                         {
                             WhatIsMyIp.WatchInterval = intResult.Item2;
                             watchIntervalIsSet = intResult.Item1;

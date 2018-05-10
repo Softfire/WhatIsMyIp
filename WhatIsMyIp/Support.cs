@@ -1,4 +1,6 @@
 ﻿using System;
+using System.IO;
+using System.Security;
 
 namespace WhatIsMyIp
 {
@@ -134,6 +136,42 @@ namespace WhatIsMyIp
             }
 
             return (false, value);
+        }
+
+        /// <summary>
+        /// Create Directory.
+        /// </summary>
+        /// <param name="filePath">The file path of where the directory is to be created.</param>
+        internal static void CreateDirectory(string filePath)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(filePath) == false)
+                {
+                    var fi = new FileInfo(filePath);
+
+                    if (fi.Directory != null &&
+                        fi.Directory.Exists == false &&
+                        fi.DirectoryName != null)
+                    {
+                        Directory.CreateDirectory(fi.DirectoryName);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                if (ex is ArgumentNullException ||
+                    ex is SecurityException ||
+                    ex is ArgumentException ||
+                    ex is UnauthorizedAccessException ||
+                    ex is PathTooLongException ||
+                    ex is NotSupportedException ||
+                    ex is DirectoryNotFoundException ||
+                    ex is IOException)
+                {
+                    File.AppendAllText(WhatIsMyIp.LogFilePath + $@"{ DateTime.Now:(yyyy-MM-dd)}.log", $@"{DateTime.Now} - An error occured: {ex}{Environment.NewLine}{Environment.NewLine}");
+                }
+            }
         }
     }
 }

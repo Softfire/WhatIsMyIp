@@ -1,5 +1,4 @@
 ﻿using System;
-using WhatIsMyIp.Modules;
 
 namespace WhatIsMyIp
 {
