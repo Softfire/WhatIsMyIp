@@ -90,6 +90,9 @@ namespace WhatIsMyIp
         {
             InitializeComponent();
 
+            // Pull registry data.
+            GetRegistrySettings();
+
             // Instantiate timer.
             Watch = new Timer
             {
@@ -97,9 +100,6 @@ namespace WhatIsMyIp
                 AutoReset = true,
                 Enabled = true
             };
-
-            // Pull registry data.
-            GetRegistrySettings();
 
             // Add processing method to trigger.
             Watch.Elapsed += ProcessIp;
@@ -424,7 +424,7 @@ namespace WhatIsMyIp
                             CurrentExternalIp != null)
                         {
                             // Set Registry Data.
-                            using (var parameterSubKey = registryEntry.OpenSubKey("Parameters", RegistryRights.SetValue))
+                            using (var parameterSubKey = registryEntry.OpenSubKey("Parameters", true))
                             {
                                 // Update progress.
                                 Console.WriteLine(@"Updating parameter in Registry for service...");

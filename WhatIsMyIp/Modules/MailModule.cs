@@ -30,6 +30,7 @@ namespace WhatIsMyIp.Modules
                 // Create mail client.
                 using (var client = new SmtpClient
                 {
+                    Host = emailHost,
                     DeliveryMethod = SmtpDeliveryMethod.Network,
                     UseDefaultCredentials = true,
                     EnableSsl = useSsl
