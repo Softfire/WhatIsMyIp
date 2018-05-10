@@ -305,7 +305,7 @@ namespace WhatIsMyIp
                         {
                             if (bool.TryParse(modulesSubKey.GetValue(nameof(IISModule)).ToString(), out var result))
                             {
-                                IISModule.IsEnabled = result;
+                                ModulesController.IsIisEnabled = result;
                             }
                         }
                     }
@@ -384,7 +384,7 @@ namespace WhatIsMyIp
                                 Console.WriteLine(@"Adding Modules in Registry...");
 
                                 // Create data for the Modules subkey.
-                                modulesSubKey?.SetValue(nameof(IISModule), IISModule.IsEnabled);
+                                modulesSubKey?.SetValue(nameof(IISModule), ModulesController.IsIisEnabled);
 
                                 // Update progress.
                                 Console.WriteLine(@"Modules added successfully.");

@@ -8,12 +8,6 @@ namespace WhatIsMyIp.Modules
     public static class IISModule
     {
         /// <summary>
-        /// Is Enabled.
-        /// Enable to use IIS module and it's methods.
-        /// </summary>
-        public static bool IsEnabled { get; set; }
-
-        /// <summary>
         /// Set FTP External Firewall IP.
         /// </summary>
         /// <param name="newIpAddress">The new ip address to use.</param>
