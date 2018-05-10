@@ -142,8 +142,18 @@ namespace WhatIsMyIp
             switch ((Commands)command)
             {
                 case Commands.GetParametersFromRegistry:
+
+                    // Stop watch.
+                    Watch.Stop();
+
                     // Pull registry data.
                     GetRegistrySettings();
+
+                    // Set watch interval.
+                    Watch.Interval = WatchInterval;
+
+                    // Start watch.
+                    Watch.Start();
 
                     // Log action.
                     File.AppendAllText(LogFilePath + $@"{ DateTime.Now:(yyyy-MM-dd)}.log", $@"{DateTime.Now} - Getting settings from Registry...{Environment.NewLine}");
