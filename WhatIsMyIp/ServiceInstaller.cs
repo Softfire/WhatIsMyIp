@@ -3,7 +3,9 @@ using System.Collections;
 using System.ComponentModel;
 using System.Configuration.Install;
 using System.IO;
+using System.Security;
 using System.ServiceProcess;
+using WhatIsMyIp.Modules;
 
 namespace WhatIsMyIp
 {
@@ -35,8 +37,10 @@ namespace WhatIsMyIp
                 var emailSslIsSet = false;
                 var logFilePathIsSet = false;
                 var watchIntervalIsSet = false;
+                var smtpClientCredentialsAreSet = true;
                 var listModules = false;
                 (bool, string) stringResult;
+                (bool, SecureString) secureStringResult;
                 (bool, int) intResult;
                 (bool, bool) boolResult;
 
@@ -49,7 +53,7 @@ namespace WhatIsMyIp
                         // If input is accepted, assign to property.
                         if ((stringResult = Support.ConfirmStringInput(@"Service Host: ", @"Set service host from which to retrieve the external ip.", Support.DisplaySetupHeader)).Item1)
                         {
-                            WhatIsMyIp.ServiceHost = stringResult.Item2;
+                            MailModule.ServiceHost = stringResult.Item2;
                             serviceHostIsSet = stringResult.Item1;
                         }
                     }
@@ -60,7 +64,7 @@ namespace WhatIsMyIp
                         // If input is accepted, assign to property.
                         if ((stringResult = Support.ConfirmStringInput(@"Email To: ", @"Set recipient email address for notifications.", Support.DisplaySetupHeader)).Item1)
                         {
-                            WhatIsMyIp.EmailTo = stringResult.Item2;
+                            MailModule.EmailTo = stringResult.Item2;
                             emailToIsSet = stringResult.Item1;
                         }
                     }
@@ -71,7 +75,7 @@ namespace WhatIsMyIp
                         // If input is accepted, assign to property.
                         if ((stringResult = Support.ConfirmStringInput(@"Email From: ", @"Set sender email address for notifications.", Support.DisplaySetupHeader)).Item1)
                         {
-                            WhatIsMyIp.EmailFrom = stringResult.Item2;
+                            MailModule.EmailFrom = stringResult.Item2;
                             emailFromIsSet = stringResult.Item1;
                         }
                     }
@@ -82,7 +86,7 @@ namespace WhatIsMyIp
                         // If input is accepted, assign to property.
                         if ((stringResult = Support.ConfirmStringInput(@"Email (SMTP) Host: ", @"Set SMTP host for email notifications.", Support.DisplaySetupHeader)).Item1)
                         {
-                            WhatIsMyIp.EmailHost = stringResult.Item2;
+                            MailModule.SmtpHost = stringResult.Item2;
                             emailHostIsSet = stringResult.Item1;
                         }
                     }
@@ -93,7 +97,7 @@ namespace WhatIsMyIp
                         // If input is accepted, assign to property.
                         if ((intResult = Support.ConfirmIntInput(@"Email (SMTP) Port: ", @"Set SMTP port for email notifications.", Support.DisplaySetupHeader)).Item1)
                         {
-                            WhatIsMyIp.EmailPort = intResult.Item2;
+                            MailModule.SmtpPort = intResult.Item2;
                             emailPortIsSet = intResult.Item1;
                         }
                     }
@@ -104,7 +108,7 @@ namespace WhatIsMyIp
                         // If input is accepted, assign to property.
                         if ((boolResult = Support.ConfirmBoolInput(@"Email SSL Enabled: ", @"Set SSL for SMTP email notifications.", Support.DisplaySetupHeader)).Item1)
                         {
-                            WhatIsMyIp.EnableSsl = boolResult.Item2;
+                            MailModule.EnableSsl = boolResult.Item2;
                             emailSslIsSet = boolResult.Item1;
                         }
                     }
@@ -137,6 +141,34 @@ namespace WhatIsMyIp
                         }
                     }
 
+                    // Set SMTP Client credentials loop.
+                    while (smtpClientCredentialsAreSet == false)
+                    {
+                        var usernameIsSet = false;
+                        var passwordIsSet = false;
+
+                        // If input is accepted, assign to property.
+                        if ((stringResult = Support.ConfirmStringInput(@"SMTP Client Username: ", $@"Set SMTP Client username. Used to authenticate teh client with the SMTP server.{Environment.NewLine}", Support.DisplaySetupHeader)).Item1)
+                        {
+                            MailModule.SmtpClientUsername = stringResult.Item2;
+                            usernameIsSet = stringResult.Item1;
+
+                            // If input is accepted, assign to property.
+                            if ((secureStringResult = Support.ConfirmSecureStringInput(@"SMTP Client Password: ", $@"Set SMTP Client password. Used to authenticate teh client with the SMTP server.{Environment.NewLine}", Support.DisplaySetupHeader)).Item1)
+                            {
+                                MailModule.SmtpClientPassword = secureStringResult.Item2;
+                                passwordIsSet = secureStringResult.Item1;
+                            }
+                        }
+
+                        // Confirm credentials are set.
+                        if (usernameIsSet &&
+                            passwordIsSet)
+                        {
+                            smtpClientCredentialsAreSet = true;
+                        }
+                    }
+
                     // Set SSL loop.
                     while (listModules)
                     {
@@ -152,20 +184,22 @@ namespace WhatIsMyIp
 
                     // Confirm properties.
                     Console.WriteLine(@"Current Settings:");
-                    Console.WriteLine($@"(1) Service Host: {WhatIsMyIp.ServiceHost}");
-                    Console.WriteLine($@"(2) Email To: {WhatIsMyIp.EmailTo}");
-                    Console.WriteLine($@"(3) Email From: {WhatIsMyIp.EmailFrom}");
-                    Console.WriteLine($@"(4) Email (SMTP) Host: {WhatIsMyIp.EmailHost}");
-                    Console.WriteLine($@"(5) Email (SMTP) Port: {WhatIsMyIp.EmailPort}");
-                    Console.WriteLine($@"(6) Email SSL Enabled: {WhatIsMyIp.EmailPort}");
+                    Console.WriteLine($@"(1) Service Host: {MailModule.ServiceHost}");
+                    Console.WriteLine($@"(2) Email To: {MailModule.EmailTo}");
+                    Console.WriteLine($@"(3) Email From: {MailModule.EmailFrom}");
+                    Console.WriteLine($@"(4) Email (SMTP) Host: {MailModule.SmtpHost}");
+                    Console.WriteLine($@"(5) Email (SMTP) Port: {MailModule.SmtpPort}");
+                    Console.WriteLine($@"(6) Email SSL Enabled: {MailModule.SmtpPort}");
                     Console.WriteLine($@"(7) Log File Path: {WhatIsMyIp.LogFilePath}");
                     Console.WriteLine($@"(8) Interval: {WhatIsMyIp.WatchInterval}");
                     Console.WriteLine($@"(9) List Available Modules");
+                    Console.WriteLine($@"(.) Set SMTP Client credentials");
                     Console.WriteLine();
                     Console.WriteLine($@"Are these settings correct?{Environment.NewLine}" +
                                       $@"Press Enter to continue.{Environment.NewLine}" +
                                       $@"Press 1-8 to reset specific setting.{Environment.NewLine}" +
-                                       @"Press 9 to view list of modules.");
+                                      $@"Press 9 to view list of modules.{Environment.NewLine}" +
+                                       @"Press . to set SMTP Client credentials.");
 
                     // Read next key press.
                     var response = Console.ReadKey();
@@ -220,7 +254,19 @@ namespace WhatIsMyIp
                     {
                         listModules = true;
                     }
+                    else if (response.Key == ConsoleKey.OemPeriod)
+                    {
+                        smtpClientCredentialsAreSet = false;
+                    }
                 }
+
+                // Get service file path.
+                WhatIsMyIp.ServiceFilePath = Context.Parameters["assemblypath"];
+
+                // Save settings.
+                WhatIsMyIp.SaveSettings();
+                MailModule.SaveSettings();
+                ModulesController.SaveSettings();
             }
             catch (Exception ex)
             {
@@ -250,8 +296,10 @@ namespace WhatIsMyIp
             // Update progress.
             Console.WriteLine(@"Installation complete.");
 
-            // Populate Registry.
-            WhatIsMyIp.SetRegistrySettings();
+            // Load settings.
+            WhatIsMyIp.LoadSettings();
+            MailModule.LoadSettings();
+            ModulesController.LoadSettings();
 
             // Get the service.
             using (var sc = new ServiceController(serviceInstaller.ServiceName))

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using Microsoft.Web.Administration;
@@ -72,13 +71,13 @@ namespace WhatIsMyIp.Modules
                     if (serverManager.Sites.Count > 0)
                     {
                         // Send out email notification.
-                        MailModule.Send(WhatIsMyIp.EmailHost, WhatIsMyIp.EmailPort,
-                                        WhatIsMyIp.EmailTo, WhatIsMyIp.EmailFrom,
+                        MailModule.Send(MailModule.SmtpHost, MailModule.SmtpPort,
+                                        MailModule.EmailTo, MailModule.EmailFrom,
                                         @"IIS FTP Firewall External Ip Updated!", "SITES",
-                                        WhatIsMyIp.EnableSsl, MailModule.Templates.IIS);
+                                        MailModule.EnableSsl, MailModule.Templates.IIS);
 
                         // Send report to admin.
-                        File.AppendAllText(WhatIsMyIp.LogFilePath + $@"{ DateTime.Now:(yyyy-MM-dd)}.log", $@"{DateTime.Now} - Email sent out to: {WhatIsMyIp.EmailTo}{Environment.NewLine}{Environment.NewLine}");
+                        File.AppendAllText(WhatIsMyIp.LogFilePath + $@"{ DateTime.Now:(yyyy-MM-dd)}.log", $@"{DateTime.Now} - Email sent out to: {MailModule.EmailTo}{Environment.NewLine}{Environment.NewLine}");
                     }
 
                     // Update progress.

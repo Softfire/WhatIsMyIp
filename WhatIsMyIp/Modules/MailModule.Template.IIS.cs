@@ -12,11 +12,10 @@ namespace WhatIsMyIp.Modules
         /// <summary>
         /// Template IIS.
         /// </summary>
-        /// <param name="additionalDetails">Additional details that will be added.</param>
         /// <returns>Returns the body of an email in HTML format.</returns>
         private static string TemplateIIS()
         {
-            using (var reader = new StreamReader($@"{WhatIsMyIp.ServiceFilePath + @"\Templates\Mail\IIS.html"}"))
+            using (var reader = new StreamReader($@"{AppDomain.CurrentDomain.BaseDirectory + @"\Templates\Mail\IIS.html"}"))
             {
 
                 var body = new StringBuilder(reader.ReadToEnd());

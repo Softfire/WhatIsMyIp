@@ -40,7 +40,7 @@ namespace WhatIsMyIp
             Console.Write(propertyTitle);
             var input = Console.ReadLine();
 
-            if (String.IsNullOrWhiteSpace(input) == false)
+            if (string.IsNullOrWhiteSpace(input) == false)
             {
                 Console.WriteLine($@"Is ({input}) correct?{Environment.NewLine}Press Enter to continue. Any other key to reset setting.");
                 var response = Console.ReadKey();
@@ -52,7 +52,7 @@ namespace WhatIsMyIp
                 }
             }
 
-            return (false, String.Empty);
+            return (false, string.Empty);
         }
 
         /// <summary>
@@ -99,7 +99,7 @@ namespace WhatIsMyIp
         /// <param name="propertyTitle">The property's title. Used prior to the input on input line.</param>
         /// <param name="propertyDescription">The property's description. Defines the requirement.</param>
         /// <param name="displayHeader">The Display Header method unique to the class calling it.</param>
-        /// <returns>Returns a bool of the input.</returns>
+        /// <returns>Returns a Tuple{bool, bool} defining whether the input was accepted and returns the input value as an bool.</returns>
         internal static (bool, bool) ConfirmBoolInput(string propertyTitle, string propertyDescription, Action displayHeader)
         {
             // Clear the Console.
@@ -120,9 +120,9 @@ namespace WhatIsMyIp
             {
                 var input = Console.ReadLine();
 
-                if (String.IsNullOrEmpty(input) == false)
+                if (string.IsNullOrEmpty(input) == false)
                 {
-                    valid = Boolean.TryParse(input, out value);
+                    valid = bool.TryParse(input, out value);
                 }
             } while (!valid);
 
@@ -136,6 +136,67 @@ namespace WhatIsMyIp
             }
 
             return (false, value);
+        }
+
+        /// <summary>
+        /// Confirm Secure String Input.
+        /// Confirms SecureString input by reviewing the input and asking for confirmation before continuing.
+        /// Allows user to provide input again if incorrectly provided earlier.
+        /// </summary>
+        /// <param name="propertyTitle">The property's title. Used prior to the input on input line.</param>
+        /// <param name="propertyDescription">The property's description. Defines the requirement.</param>
+        /// <param name="displayHeader">The Display Header method unique to the class calling it.</param>
+        /// <returns>Returns a Tuple{bool, SecureString} defining whether the input was accepted and returns the input value as an SecureString.</returns>
+        /// <remarks>SecureStrings are not stored in Managed Memory and are ideal for storing sensitive data.</remarks>
+        internal static (bool, SecureString) ConfirmSecureStringInput(string propertyTitle, string propertyDescription, Action displayHeader)
+        {
+            // Clear the Console.
+            Console.Clear();
+
+            // Display Header.
+            displayHeader();
+
+            // Instatiate new SecureString.
+            var password = new SecureString();
+
+            // Set property.
+            Console.WriteLine(propertyDescription);
+            Console.Write(propertyTitle);
+            var input = Console.ReadKey(true);
+
+            // Check for Enter key.
+            while (input.Key != ConsoleKey.Enter)
+            {
+                if (input.Key == ConsoleKey.Backspace)
+                {
+                    if (password.Length > 0)
+                    {
+                        // remove last entry in password.
+                        password.RemoveAt(password.Length - 1);
+                        
+                        // Clear * from last input.
+                        Console.Write(input.KeyChar);
+                        Console.Write(@" ");
+                        Console.Write(input.KeyChar);
+                    }
+                }
+                else
+                {
+                    // Add character to password.
+                    password.AppendChar(input.KeyChar);
+
+                    // Output an * to the screen.
+                    Console.Write(@"*");
+                }
+
+                input = Console.ReadKey(true);
+            }
+
+            // Secure password by making it readonly.
+            password.MakeReadOnly();
+
+            // Confirmation.
+            return (true, password);
         }
 
         /// <summary>

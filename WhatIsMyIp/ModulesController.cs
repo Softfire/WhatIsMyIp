@@ -12,7 +12,7 @@ namespace WhatIsMyIp
         /// <summary>
         /// List Modules.
         /// </summary>
-        public static void ListModules()
+        internal static void ListModules()
         {
             var listModules = true;
 
@@ -44,6 +44,27 @@ namespace WhatIsMyIp
                     IsIisEnabled = !IsIisEnabled;
                 }
             }
+        }
+
+        /// <summary>
+        /// Save Settings.
+        /// </summary>
+        internal static void LoadSettings()
+        {
+            // IIS Module settings.
+            IsIisEnabled = Properties.Settings.Default.ModulesIISEnabled;
+        }
+
+        /// <summary>
+        /// Save Settings.
+        /// </summary>
+        internal static void SaveSettings()
+        {
+            // IIS Module settings.
+            Properties.Settings.Default.ModulesIISEnabled = IsIisEnabled;
+
+            // Save settings.
+            Properties.Settings.Default.Save();
         }
 
         #region Support

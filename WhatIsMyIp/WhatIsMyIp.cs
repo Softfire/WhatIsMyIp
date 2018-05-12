@@ -16,11 +16,6 @@ namespace WhatIsMyIp
         internal static Timer Watch { get; set; }
 
         /// <summary>
-        /// Service Host.
-        /// </summary>
-        internal static string ServiceHost { get; set; }
-
-        /// <summary>
         /// New External Ip Address.
         /// </summary>
         internal static IPAddress NewExternalIpAddress { get; set; }
@@ -34,31 +29,6 @@ namespace WhatIsMyIp
         /// Web Response.
         /// </summary>
         private static string WebResponse { get; set; }
-
-        /// <summary>
-        /// Email To.
-        /// </summary>
-        internal static string EmailTo { get; set; } = string.Empty;
-
-        /// <summary>
-        /// Email From.
-        /// </summary>
-        internal static string EmailFrom { get; set; } = string.Empty;
-
-        /// <summary>
-        /// Email Host.
-        /// </summary>
-        internal static string EmailHost { get; set; } = string.Empty;
-
-        /// <summary>
-        /// Email Host.
-        /// </summary>
-        internal static int EmailPort { get; set; }
-
-        /// <summary>
-        /// Enable Ssl.
-        /// </summary>
-        internal static bool EnableSsl { get; set; }
 
         /// <summary>
         /// Log File Path.
@@ -82,7 +52,8 @@ namespace WhatIsMyIp
         /// </summary>
         private enum Commands
         {
-            GetParametersFromRegistry = 128
+            SaveSettings = 128,
+            LoadSettings = 129
         }
 
         /// <summary>
@@ -93,8 +64,13 @@ namespace WhatIsMyIp
         {
             InitializeComponent();
 
-            // Pull registry data.
-            GetRegistrySettings();
+            // Allow pausing and continuing.
+            CanPauseAndContinue = true;
+
+            // Load settings.
+            LoadSettings();
+            MailModule.LoadSettings();
+            ModulesController.LoadSettings();
 
             // Instantiate timer.
             Watch = new Timer
@@ -123,7 +99,7 @@ namespace WhatIsMyIp
             // Log action.
             File.AppendAllText(LogFilePath + $@"{ DateTime.Now:(yyyy-MM-dd)}.log", $@"{DateTime.Now} - Starting service...{Environment.NewLine}");
         }
-
+        
         /// <summary>
         /// On Stop.
         /// </summary>
@@ -137,6 +113,30 @@ namespace WhatIsMyIp
         }
 
         /// <summary>
+        /// On Shutdown.
+        /// </summary>
+        protected override void OnShutdown()
+        {
+            base.OnShutdown();
+        }
+
+        /// <summary>
+        /// On Pause.
+        /// </summary>
+        protected override void OnPause()
+        {
+            base.OnPause();
+        }
+
+        /// <summary>
+        /// On Continue.
+        /// </summary>
+        protected override void OnContinue()
+        {
+            base.OnContinue();
+        }
+
+        /// <summary>
         /// On Custom Command.
         /// </summary>
         /// <param name="command">Intakes an int to identify a unique command to run.</param>
@@ -144,13 +144,15 @@ namespace WhatIsMyIp
         {
             switch ((Commands)command)
             {
-                case Commands.GetParametersFromRegistry:
+                case Commands.LoadSettings:
 
                     // Stop watch.
                     Watch.Stop();
 
-                    // Pull registry data.
-                    GetRegistrySettings();
+                    // Load settings.
+                    LoadSettings();
+                    MailModule.LoadSettings();
+                    ModulesController.LoadSettings();
 
                     // Set watch interval.
                     Watch.Interval = WatchInterval;
@@ -159,7 +161,25 @@ namespace WhatIsMyIp
                     Watch.Start();
 
                     // Log action.
-                    File.AppendAllText(LogFilePath + $@"{ DateTime.Now:(yyyy-MM-dd)}.log", $@"{DateTime.Now} - Getting settings from Registry...{Environment.NewLine}");
+                    File.AppendAllText(LogFilePath + $@"{ DateTime.Now:(yyyy-MM-dd)}.log", $@"{DateTime.Now} - Loading settings...{Environment.NewLine}");
+                    break;
+                case Commands.SaveSettings:
+                    // Stop watch.
+                    Watch.Stop();
+
+                    // Save settings.
+                    SaveSettings();
+                    MailModule.SaveSettings();
+                    ModulesController.SaveSettings();
+
+                    // Set watch interval.
+                    Watch.Interval = WatchInterval;
+
+                    // Start watch.
+                    Watch.Start();
+
+                    // Log action.
+                    File.AppendAllText(LogFilePath + $@"{ DateTime.Now:(yyyy-MM-dd)}.log", $@"{DateTime.Now} - Saving settings...{Environment.NewLine}");
                     break;
                 default:
                     // Log action.
@@ -179,17 +199,18 @@ namespace WhatIsMyIp
         {
             try
             {
+                // Create a web client to gather data.
                 using (var wc = new WebClient())
                 {
-                    WebResponse = wc.DownloadString(ServiceHost);
+                    // Call out to the Service Host for the external ip being used by the current network.
+                    WebResponse = wc.DownloadString(MailModule.ServiceHost);
 
+                    // If the response is null or empty send an email to the admin(s) to check for errors.
                     if (string.IsNullOrWhiteSpace(WebResponse))
                     {
-                        File.AppendAllText(LogFilePath + $@"{ DateTime.Now:(yyyy-MM-dd)}.log", $@"{DateTime.Now} - An error occured: The web response from {ServiceHost} was '{WebResponse}'.{Environment.NewLine}{Environment.NewLine}");
-                        MailModule.Send(EmailHost, EmailPort,
-                                        EmailTo, EmailFrom,
-                                        "What Is My Ip - Error!", $"External IP Web Response was '{WebResponse}'.",
-                                        EnableSsl);
+                        File.AppendAllText(LogFilePath + $@"{ DateTime.Now:(yyyy-MM-dd)}.log", $@"{DateTime.Now} - An error occured: The web response from {MailModule.ServiceHost} was '{WebResponse}'.{Environment.NewLine}{Environment.NewLine}");
+                        MailModule.Send(MailModule.SmtpHost, MailModule.SmtpPort, MailModule.EmailTo, MailModule.EmailFrom,
+                                        "What Is My Ip - Error!", $"External IP Web Response was '{WebResponse}'.", MailModule.EnableSsl);
                     }
                 }
 
@@ -201,7 +222,7 @@ namespace WhatIsMyIp
                     if (CurrentExternalIp == null)
                     {
                         CurrentExternalIp = NewExternalIpAddress = IPAddress.Parse(WebResponse);
-                        UpdateCurrentExternalIpRegistryEntry();
+                        SaveSettings();
                     }
                     else
                     {
@@ -212,7 +233,7 @@ namespace WhatIsMyIp
                     if (CurrentExternalIp.Equals(NewExternalIpAddress) == false)
                     {
                         CurrentExternalIp = NewExternalIpAddress;
-                        UpdateCurrentExternalIpRegistryEntry();
+                        SaveSettings();
 
                         if (ModulesController.IsIisEnabled)
                         {
@@ -221,14 +242,12 @@ namespace WhatIsMyIp
                         }
 
                         // Notify admin of IP change.
-                        MailModule.Send(EmailHost, EmailPort,
-                                        EmailTo, EmailFrom,
-                                        "What Is My Ip - IP Address Change!", $"External IP changed to: {WebResponse}",
-                                        EnableSsl);
+                        MailModule.Send(MailModule.SmtpHost, MailModule.SmtpPort, MailModule.EmailTo, MailModule.EmailFrom,
+                                        "What Is My Ip - IP Address Change!", $"External IP changed to: {WebResponse}", MailModule.EnableSsl);
                         
                         // Write to logs.
                         File.AppendAllText(LogFilePath + $@"{ DateTime.Now:(yyyy-MM-dd)}.log", $@"{DateTime.Now} - External Ip Address has changed to: {WebResponse}{Environment.NewLine}");
-                        File.AppendAllText(LogFilePath + $@"{ DateTime.Now:(yyyy-MM-dd)}.log", $@"{DateTime.Now} - Email sent out to: {EmailTo}{Environment.NewLine}{Environment.NewLine}");
+                        File.AppendAllText(LogFilePath + $@"{ DateTime.Now:(yyyy-MM-dd)}.log", $@"{DateTime.Now} - Email sent out to: {MailModule.EmailTo}{Environment.NewLine}{Environment.NewLine}");
                     }
 
                     WebResponse = null;
@@ -246,6 +265,30 @@ namespace WhatIsMyIp
                     throw;
                 }
             }
+        }
+
+        /// <summary>
+        /// Get Settings.
+        /// </summary>
+        internal static void LoadSettings()
+        {
+            // Core Settings.
+            ServiceFilePath = Properties.Settings.Default.ServiceFilePath;
+            LogFilePath = Properties.Settings.Default.LogFilePath;
+            CurrentExternalIp = IPAddress.Parse(Properties.Settings.Default.CurrentExternalIp);
+            WatchInterval = Properties.Settings.Default.WatchInterval;
+        }
+
+        internal static void SaveSettings()
+        {
+            // Core settings.
+            Properties.Settings.Default.ServiceFilePath = ServiceFilePath;
+            Properties.Settings.Default.LogFilePath = LogFilePath;
+            Properties.Settings.Default.CurrentExternalIp = CurrentExternalIp.ToString();
+            Properties.Settings.Default.WatchInterval = WatchInterval;
+
+            // Save settings.
+            Properties.Settings.Default.Save();
         }
 
         /// <summary>
@@ -286,11 +329,11 @@ namespace WhatIsMyIp
 
                         if (parametersSubKey != null)
                         {
-                            var serviceHost = parametersSubKey.GetValue(nameof(ServiceHost)).ToString();
-                            var emailTo = parametersSubKey.GetValue(nameof(EmailTo)).ToString();
-                            var emailFrom = parametersSubKey.GetValue(nameof(EmailFrom)).ToString();
-                            var emailHost = parametersSubKey.GetValue(nameof(EmailHost)).ToString();
-                            int.TryParse(parametersSubKey.GetValue(nameof(EmailPort)).ToString(), out var emailPort);
+                            var serviceHost = parametersSubKey.GetValue(nameof(MailModule.ServiceHost)).ToString();
+                            var emailTo = parametersSubKey.GetValue(nameof(MailModule.EmailTo)).ToString();
+                            var emailFrom = parametersSubKey.GetValue(nameof(MailModule.EmailFrom)).ToString();
+                            var emailHost = parametersSubKey.GetValue(nameof(MailModule.SmtpHost)).ToString();
+                            int.TryParse(parametersSubKey.GetValue(nameof(MailModule.SmtpPort)).ToString(), out var emailPort);
                             var logFilePath = parametersSubKey.GetValue(nameof(LogFilePath)).ToString();
                             int.TryParse(parametersSubKey.GetValue(nameof(WatchInterval)).ToString(), out var watchInterval);
                             IPAddress.TryParse(parametersSubKey.GetValue(nameof(CurrentExternalIp)).ToString(), out var currentExternalIp);
@@ -304,11 +347,11 @@ namespace WhatIsMyIp
                                 watchInterval > 0 &&
                                 currentExternalIp != null)
                             {
-                                ServiceHost = serviceHost;
-                                EmailTo = emailTo;
-                                EmailFrom = emailFrom;
-                                EmailHost = emailHost;
-                                EmailPort = emailPort;
+                                MailModule.ServiceHost = serviceHost;
+                                MailModule.EmailTo = emailTo;
+                                MailModule.EmailFrom = emailFrom;
+                                MailModule.SmtpHost = emailHost;
+                                MailModule.SmtpPort = emailPort;
                                 LogFilePath = logFilePath;
                                 WatchInterval = watchInterval;
                                 CurrentExternalIp = currentExternalIp;
@@ -366,11 +409,10 @@ namespace WhatIsMyIp
 
                         // Confirm inputs.
                         if (registryEntry != null &&
-                            string.IsNullOrWhiteSpace(ServiceHost) == false &&
-                            string.IsNullOrWhiteSpace(EmailTo) == false &&
-                            string.IsNullOrWhiteSpace(EmailFrom) == false &&
-                            string.IsNullOrWhiteSpace(EmailHost) == false &&
-                            EmailPort > 0 &&
+                            string.IsNullOrWhiteSpace(MailModule.ServiceHost) == false &&
+                            string.IsNullOrWhiteSpace(MailModule.EmailTo) == false &&
+                            string.IsNullOrWhiteSpace(MailModule.EmailFrom) == false &&
+                            string.IsNullOrWhiteSpace(MailModule.SmtpHost) == false && MailModule.SmtpPort > 0 &&
                             string.IsNullOrWhiteSpace(LogFilePath) == false &&
                             WatchInterval >= 0)
                         {
@@ -384,11 +426,11 @@ namespace WhatIsMyIp
                                 Console.WriteLine(@"Adding Parameters in Registry...");
                                 
                                 // Create data for the Parameters subkey.
-                                parameterSubKey?.SetValue(nameof(ServiceHost), ServiceHost);
-                                parameterSubKey?.SetValue(nameof(EmailTo), EmailTo);
-                                parameterSubKey?.SetValue(nameof(EmailFrom), EmailFrom);
-                                parameterSubKey?.SetValue(nameof(EmailHost), EmailHost);
-                                parameterSubKey?.SetValue(nameof(EmailPort), EmailPort);
+                                parameterSubKey?.SetValue(nameof(MailModule.ServiceHost), MailModule.ServiceHost);
+                                parameterSubKey?.SetValue(nameof(MailModule.EmailTo), MailModule.EmailTo);
+                                parameterSubKey?.SetValue(nameof(MailModule.EmailFrom), MailModule.EmailFrom);
+                                parameterSubKey?.SetValue(nameof(MailModule.SmtpHost), MailModule.SmtpHost);
+                                parameterSubKey?.SetValue(nameof(MailModule.SmtpPort), MailModule.SmtpPort);
                                 parameterSubKey?.SetValue(nameof(LogFilePath), LogFilePath);
                                 parameterSubKey?.SetValue(nameof(WatchInterval), WatchInterval);
                                 parameterSubKey?.SetValue(nameof(CurrentExternalIp), IPAddress.None);
@@ -514,7 +556,5 @@ namespace WhatIsMyIp
                 }
             }
         }
-
-        
     }
 }
