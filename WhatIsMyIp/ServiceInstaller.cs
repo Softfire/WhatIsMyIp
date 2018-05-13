@@ -2,6 +2,7 @@
 using System.Collections;
 using System.ComponentModel;
 using System.Configuration.Install;
+using System.Diagnostics;
 using System.IO;
 using System.Security;
 using System.ServiceProcess;
@@ -80,22 +81,22 @@ namespace WhatIsMyIp
                         }
                     }
 
-                    // Set Email Host loop.
+                    // Set Smtp Host loop.
                     while (emailHostIsSet == false)
                     {
                         // If input is accepted, assign to property.
-                        if ((stringResult = Support.ConfirmStringInput(@"Email (SMTP) Host: ", @"Set SMTP host for email notifications.", Support.DisplaySetupHeader)).Item1)
+                        if ((stringResult = Support.ConfirmStringInput(@"SMTP Host: ", @"Set SMTP host for email notifications.", Support.DisplaySetupHeader)).Item1)
                         {
                             MailModule.SmtpHost = stringResult.Item2;
                             emailHostIsSet = stringResult.Item1;
                         }
                     }
 
-                    // Set Email Port loop.
+                    // Set Smtp Port loop.
                     while (emailPortIsSet == false)
                     {
                         // If input is accepted, assign to property.
-                        if ((intResult = Support.ConfirmIntInput(@"Email (SMTP) Port: ", @"Set SMTP port for email notifications.", Support.DisplaySetupHeader)).Item1)
+                        if ((intResult = Support.ConfirmIntInput(@"SMTP Port: ", @"Set SMTP port to use for email notifications.", Support.DisplaySetupHeader)).Item1)
                         {
                             MailModule.SmtpPort = intResult.Item2;
                             emailPortIsSet = intResult.Item1;
@@ -189,7 +190,7 @@ namespace WhatIsMyIp
                     Console.WriteLine($@"(3) Email From: {MailModule.EmailFrom}");
                     Console.WriteLine($@"(4) Email (SMTP) Host: {MailModule.SmtpHost}");
                     Console.WriteLine($@"(5) Email (SMTP) Port: {MailModule.SmtpPort}");
-                    Console.WriteLine($@"(6) Email SSL Enabled: {MailModule.SmtpPort}");
+                    Console.WriteLine($@"(6) Email SSL Enabled: {MailModule.EnableSsl}");
                     Console.WriteLine($@"(7) Log File Path: {WhatIsMyIp.LogFilePath}");
                     Console.WriteLine($@"(8) Interval: {WhatIsMyIp.WatchInterval}");
                     Console.WriteLine($@"(9) List Available Modules");
@@ -260,13 +261,13 @@ namespace WhatIsMyIp
                     }
                 }
 
+                // Create log directory.
+                Support.CreateDirectory(WhatIsMyIp.LogFilePath);
+
                 // Get service file path.
                 WhatIsMyIp.ServiceFilePath = Context.Parameters["assemblypath"];
-
-                // Save settings.
-                WhatIsMyIp.SaveSettings();
-                MailModule.SaveSettings();
-                ModulesController.SaveSettings();
+                WhatIsMyIp.ServiceFilePath = WhatIsMyIp.ServiceFilePath.Replace("\"", string.Empty);
+                WhatIsMyIp.ServiceFilePath = WhatIsMyIp.ServiceFilePath.Replace(@"\" + nameof(WhatIsMyIp) + ".exe", string.Empty);
             }
             catch (Exception ex)
             {
@@ -296,10 +297,14 @@ namespace WhatIsMyIp
             // Update progress.
             Console.WriteLine(@"Installation complete.");
 
-            // Load settings.
-            WhatIsMyIp.LoadSettings();
-            MailModule.LoadSettings();
-            ModulesController.LoadSettings();
+            // Push to registry.
+            WhatIsMyIp.SetRegistrySettings();
+
+            // Save settings.
+            // TODO: Saving is not working.
+            //WhatIsMyIp.SaveSettings();
+            //MailModule.SaveSettings();
+            //ModulesController.SaveSettings();
 
             // Get the service.
             using (var sc = new ServiceController(serviceInstaller.ServiceName))

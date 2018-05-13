@@ -26,29 +26,6 @@ namespace WhatIsMyIp.Properties {
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("")]
-        public string SmtpClientUsername {
-            get {
-                return ((string)(this["SmtpClientUsername"]));
-            }
-            set {
-                this["SmtpClientUsername"] = value;
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        public global::System.Security.SecureString SmtpClientPassword {
-            get {
-                return ((global::System.Security.SecureString)(this["SmtpClientPassword"]));
-            }
-            set {
-                this["SmtpClientPassword"] = value;
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("")]
         public string ServiceHost {
             get {
                 return ((string)(this["ServiceHost"]));
@@ -175,6 +152,30 @@ namespace WhatIsMyIp.Properties {
             }
             set {
                 this["ModulesIISEnabled"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string SmtpClientUsername {
+            get {
+                return ((string)(this["SmtpClientUsername"]));
+            }
+            set {
+                this["SmtpClientUsername"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string SmtpClientPassword {
+            get {
+                return ((string)(this["SmtpClientPassword"]));
+            }
+            set {
+                this["SmtpClientPassword"] = value;
             }
         }
     }

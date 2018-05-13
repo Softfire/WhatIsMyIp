@@ -2,12 +2,6 @@
 <SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="WhatIsMyIp.Properties" GeneratedClassName="Settings">
   <Profiles />
   <Settings>
-    <Setting Name="SmtpClientUsername" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
-    </Setting>
-    <Setting Name="SmtpClientPassword" Type="System.Security.SecureString" Scope="User">
-      <Value Profile="(Default)" />
-    </Setting>
     <Setting Name="ServiceHost" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
     </Setting>
@@ -40,6 +34,12 @@
     </Setting>
     <Setting Name="ModulesIISEnabled" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="SmtpClientUsername" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="SmtpClientPassword" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
     </Setting>
   </Settings>
 </SettingsFile>

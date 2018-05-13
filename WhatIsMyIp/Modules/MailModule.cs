@@ -83,35 +83,28 @@ namespace WhatIsMyIp.Modules
                 // Create mail client.
                 using (var client = new SmtpClient(emailHost, emailHostPort)
                 {
-                    Host = emailHost,
                     DeliveryMethod = SmtpDeliveryMethod.Network,
                     UseDefaultCredentials = string.IsNullOrWhiteSpace(SmtpClientUsername) && SmtpClientPassword == null,
                     Credentials = string.IsNullOrWhiteSpace(SmtpClientUsername) && SmtpClientPassword == null ? new NetworkCredential(SmtpClientUsername, SmtpClientPassword) : null,
                     EnableSsl = useSsl
                 })
                 {
-                    MailMessage mail;
-
-                    // Create message to send.
-                    switch (template)
+                    using (var mail = new MailMessage(emailFrom, emailTo, emailSubject, emailBody))
                     {
-                        case Templates.IIS:
-                            mail = new MailMessage(emailFrom, emailTo, emailSubject, emailBody)
-                            {
-                                IsBodyHtml = true,
-                                AlternateViews =
-                                {
-                                    AlternateView.CreateAlternateViewFromString(TemplateIIS(), new ContentType("text/html"))
-                                }
-                            };
-                            break;
-                        default:
-                            mail = new MailMessage(emailFrom, emailTo, emailSubject, emailBody);
-                            break;
-                    }
+                        // Use mail message template.
+                        switch (template)
+                        {
+                            case Templates.None:
+                                break;
+                            case Templates.IIS:
+                                mail.IsBodyHtml = true;
+                                mail.AlternateViews.Add(AlternateView.CreateAlternateViewFromString(TemplateIIS(), new ContentType("text/html")));
+                                break;
+                        }
 
-                    // Send message.
-                    client.Send(mail);
+                        // Send message.
+                        client.Send(mail);
+                    }
 
                     return true;
                 }
@@ -133,7 +126,9 @@ namespace WhatIsMyIp.Modules
             SmtpPort = Properties.Settings.Default.SmtpPort;
             EnableSsl = Properties.Settings.Default.EnableSsl;
             SmtpClientUsername = Properties.Settings.Default.SmtpClientUsername;
-            SmtpClientPassword = Properties.Settings.Default.SmtpClientPassword;
+
+            // TODO: Decrypt password.
+            //SmtpClientPassword = Decrypt(Properties.Settings.Default.SmtpClientPassword);
         }
 
         /// <summary>
@@ -151,7 +146,7 @@ namespace WhatIsMyIp.Modules
             Properties.Settings.Default.SmtpClientUsername = SmtpClientUsername;
 
             // TODO: Encrypt password.
-            Properties.Settings.Default.SmtpClientPassword = SmtpClientPassword;
+            //Properties.Settings.Default.SmtpClientPassword = Ecrypt(SmtpClientPassword);
 
             // Save settings.
             Properties.Settings.Default.Save();

@@ -63,14 +63,9 @@ namespace WhatIsMyIp
         public WhatIsMyIp()
         {
             InitializeComponent();
-
+            
             // Allow pausing and continuing.
             CanPauseAndContinue = true;
-
-            // Load settings.
-            LoadSettings();
-            MailModule.LoadSettings();
-            ModulesController.LoadSettings();
 
             // Instantiate timer.
             Watch = new Timer
@@ -82,9 +77,6 @@ namespace WhatIsMyIp
 
             // Add processing method to trigger.
             Watch.Elapsed += ProcessIp;
-            
-            // Create log directory.
-            Support.CreateDirectory(LogFilePath);
         }
 
         /// <summary>
@@ -93,6 +85,12 @@ namespace WhatIsMyIp
         /// <param name="args"></param>
         protected override void OnStart(string[] args)
         {
+            // Load settings.
+            // TODO: Saving is not working.
+            //LoadSettings();
+            //MailModule.LoadSettings();
+            //ModulesController.LoadSettings();
+
             // Start watch.
             Watch.Start();
 
@@ -149,10 +147,14 @@ namespace WhatIsMyIp
                     // Stop watch.
                     Watch.Stop();
 
+                    // Pull registry data.
+                    GetRegistrySettings();
+
                     // Load settings.
-                    LoadSettings();
-                    MailModule.LoadSettings();
-                    ModulesController.LoadSettings();
+                    // TODO: Saving is not working.
+                    //LoadSettings();
+                    //MailModule.LoadSettings();
+                    //ModulesController.LoadSettings();
 
                     // Set watch interval.
                     Watch.Interval = WatchInterval;
@@ -167,10 +169,14 @@ namespace WhatIsMyIp
                     // Stop watch.
                     Watch.Stop();
 
+                    // Push to registry.
+                    SetRegistrySettings();
+
                     // Save settings.
-                    SaveSettings();
-                    MailModule.SaveSettings();
-                    ModulesController.SaveSettings();
+                    // TODO: Saving in not working.
+                    //SaveSettings();
+                    //MailModule.SaveSettings();
+                    //ModulesController.SaveSettings();
 
                     // Set watch interval.
                     Watch.Interval = WatchInterval;
@@ -222,7 +228,12 @@ namespace WhatIsMyIp
                     if (CurrentExternalIp == null)
                     {
                         CurrentExternalIp = NewExternalIpAddress = IPAddress.Parse(WebResponse);
-                        SaveSettings();
+
+                        // Push to registry.
+                        UpdateCurrentExternalIpRegistryEntry();
+
+                        // TODO: Saving in not working.
+                        //SaveSettings();
                     }
                     else
                     {
@@ -233,7 +244,12 @@ namespace WhatIsMyIp
                     if (CurrentExternalIp.Equals(NewExternalIpAddress) == false)
                     {
                         CurrentExternalIp = NewExternalIpAddress;
-                        SaveSettings();
+
+                        // Push to registry.
+                        UpdateCurrentExternalIpRegistryEntry();
+
+                        // TODO: Saving in not working.
+                        //SaveSettings();
 
                         if (ModulesController.IsIisEnabled)
                         {
@@ -279,6 +295,9 @@ namespace WhatIsMyIp
             WatchInterval = Properties.Settings.Default.WatchInterval;
         }
 
+        /// <summary>
+        /// Save Settings.
+        /// </summary>
         internal static void SaveSettings()
         {
             // Core settings.
@@ -294,7 +313,7 @@ namespace WhatIsMyIp
         /// <summary>
         /// Get Registry Settings.
         /// </summary>
-        private static void GetRegistrySettings()
+        internal static void GetRegistrySettings()
         {
             try
             {
@@ -303,24 +322,6 @@ namespace WhatIsMyIp
 
                 using (var hklm = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
                 {
-                    // Retrieve service path.
-                    using (var serviceSubKey = hklm.OpenSubKey($@"SYSTEM\CurrentControlSet\Services\{nameof(WhatIsMyIp)}", false))
-                    {
-                        // Update progress.
-                        Console.WriteLine($@"Registry Entry: ({serviceSubKey})");
-
-                        if (serviceSubKey != null)
-                        {
-                            var serviceFilePath = serviceSubKey.GetValue("ImagePath").ToString();
-
-                            if (string.IsNullOrWhiteSpace(serviceFilePath) == false)
-                            {
-                                ServiceFilePath = serviceFilePath.Replace("\"", string.Empty);
-                                ServiceFilePath = ServiceFilePath.Replace(@"\" + nameof(WhatIsMyIp) + ".exe", string.Empty);
-                            }
-                        }
-                    }
-
                     // Retrieve Parameters.
                     using (var parametersSubKey = hklm.OpenSubKey($@"SYSTEM\CurrentControlSet\Services\{nameof(WhatIsMyIp)}\Parameters", false))
                     {
@@ -337,6 +338,7 @@ namespace WhatIsMyIp
                             var logFilePath = parametersSubKey.GetValue(nameof(LogFilePath)).ToString();
                             int.TryParse(parametersSubKey.GetValue(nameof(WatchInterval)).ToString(), out var watchInterval);
                             IPAddress.TryParse(parametersSubKey.GetValue(nameof(CurrentExternalIp)).ToString(), out var currentExternalIp);
+                            var serviceFilePath = parametersSubKey.GetValue(nameof(ServiceFilePath)).ToString();
 
                             if (string.IsNullOrWhiteSpace(serviceHost) == false &&
                                 string.IsNullOrWhiteSpace(emailTo) == false &&
@@ -345,7 +347,8 @@ namespace WhatIsMyIp
                                 emailPort > 0 &&
                                 string.IsNullOrWhiteSpace(logFilePath) == false &&
                                 watchInterval > 0 &&
-                                currentExternalIp != null)
+                                currentExternalIp != null &&
+                                string.IsNullOrWhiteSpace(serviceFilePath) == false)
                             {
                                 MailModule.ServiceHost = serviceHost;
                                 MailModule.EmailTo = emailTo;
@@ -355,6 +358,7 @@ namespace WhatIsMyIp
                                 LogFilePath = logFilePath;
                                 WatchInterval = watchInterval;
                                 CurrentExternalIp = currentExternalIp;
+                                ServiceFilePath = serviceFilePath;
                             }
                         }
                     }
@@ -414,7 +418,8 @@ namespace WhatIsMyIp
                             string.IsNullOrWhiteSpace(MailModule.EmailFrom) == false &&
                             string.IsNullOrWhiteSpace(MailModule.SmtpHost) == false && MailModule.SmtpPort > 0 &&
                             string.IsNullOrWhiteSpace(LogFilePath) == false &&
-                            WatchInterval >= 0)
+                            WatchInterval >= 0 &&
+                            string.IsNullOrWhiteSpace(ServiceFilePath) == false)
                         {
                             // Update progress.
                             Console.WriteLine(@"Creating Parameters SubKey in Registry for service...");
@@ -434,6 +439,7 @@ namespace WhatIsMyIp
                                 parameterSubKey?.SetValue(nameof(LogFilePath), LogFilePath);
                                 parameterSubKey?.SetValue(nameof(WatchInterval), WatchInterval);
                                 parameterSubKey?.SetValue(nameof(CurrentExternalIp), IPAddress.None);
+                                parameterSubKey?.SetValue(nameof(ServiceFilePath), ServiceFilePath);
 
                                 // Update progress.
                                 Console.WriteLine(@"Parameters added successfully.");
