@@ -91,6 +91,9 @@ namespace WhatIsMyIp
             //MailModule.LoadSettings();
             //ModulesController.LoadSettings();
 
+            // Get Registry data.
+            GetRegistrySettings();
+
             // Start watch.
             Watch.Start();
 
