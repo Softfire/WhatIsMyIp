@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using System.Net.Mail;
 using System.ServiceProcess;
 using System.Timers;
 using Microsoft.Win32;
@@ -47,6 +49,21 @@ namespace WhatIsMyIp
         internal static int WatchInterval { get; set; } = 300000;
 
         /// <summary>
+        /// Email Sent Successfully.
+        /// </summary>
+        internal static bool EmailSentSuccessfully { get; set; }
+
+        /// <summary>
+        /// Resend Mail.
+        /// </summary>
+        internal static bool ResendMail { get; set; }
+
+        /// <summary>
+        /// Mail Messages.
+        /// </summary>
+        internal static List<MailMessage> MailMessages { get; set; }
+
+        /// <summary>
         /// Commands.
         /// Call through a command prompt to activate special commands. Eg. "sc control WhatIsMyIp 1'.
         /// </summary>
@@ -74,6 +91,9 @@ namespace WhatIsMyIp
                 AutoReset = true,
                 Enabled = true
             };
+
+            // Create message storage for unsent mail.
+            MailMessages = new List<MailMessage>();
 
             // Add processing method to trigger.
             Watch.Elapsed += ProcessIp;
@@ -208,6 +228,19 @@ namespace WhatIsMyIp
         {
             try
             {
+                // Send any unsent mail.
+                if (ResendMail)
+                {
+                    for (var i = 0; i < MailMessages.Count; i++)
+                    {
+                        var message = MailMessages[i];
+                        if (MailModule.Send(MailModule.SmtpHost, MailModule.SmtpPort, message, MailModule.EnableSsl))
+                        {
+                            MailMessages.Remove(message);
+                        }
+                    }
+                }
+
                 // Create a web client to gather data.
                 using (var wc = new WebClient())
                 {
@@ -218,8 +251,21 @@ namespace WhatIsMyIp
                     if (string.IsNullOrWhiteSpace(WebResponse))
                     {
                         File.AppendAllText(LogFilePath + $@"{ DateTime.Now:(yyyy-MM-dd)}.log", $@"{DateTime.Now} - An error occured: The web response from {MailModule.ServiceHost} was '{WebResponse}'.{Environment.NewLine}{Environment.NewLine}");
-                        MailModule.Send(MailModule.SmtpHost, MailModule.SmtpPort, MailModule.EmailTo, MailModule.EmailFrom,
-                                        "What Is My Ip - Error!", $"External IP Web Response was '{WebResponse}'.", MailModule.EnableSsl);
+
+                        // Prepare mail message to send.
+                        var message = new MailMessage(MailModule.EmailFrom, MailModule.EmailTo, "What Is My Ip - Error!", $"External IP Web Response was '{WebResponse}'.");
+
+                        // Send mail.
+                        EmailSentSuccessfully = MailModule.Send(MailModule.SmtpHost, MailModule.SmtpPort, message, MailModule.EnableSsl);
+
+                        // Flag service to resend if an error occured when sending mail.
+                        ResendMail = !EmailSentSuccessfully;
+
+                        // Queue previously unsent mail.
+                        if (ResendMail)
+                        {
+                            MailMessages.Add(message);
+                        }
                     }
                 }
 
@@ -257,16 +303,34 @@ namespace WhatIsMyIp
                         if (ModulesController.IsIisEnabled)
                         {
                             // Update IIS FTP firewall settings.
-                            IISModule.SetFTPExternalFirewallIp(NewExternalIpAddress);
+                            IISModule.SetFtpExternalFirewallIp(NewExternalIpAddress);
                         }
 
                         // Notify admin of IP change.
-                        MailModule.Send(MailModule.SmtpHost, MailModule.SmtpPort, MailModule.EmailTo, MailModule.EmailFrom,
-                                        "What Is My Ip - IP Address Change!", $"External IP changed to: {WebResponse}", MailModule.EnableSsl);
-                        
+                        EmailSentSuccessfully = MailModule.Send(MailModule.SmtpHost, MailModule.SmtpPort, MailModule.EmailTo, MailModule.EmailFrom,
+                                                                "What Is My Ip - IP Address Change!", $"External IP changed to: {WebResponse}", MailModule.EnableSsl)
+                                                                .IsCompleted;
+
+                        // Prepare mail message to send.
+                        var message = new MailMessage(MailModule.EmailFrom, MailModule.EmailTo, "What Is My Ip - IP Address Change!", $"External IP changed to: {WebResponse}");
+
+                        // Send Mail
+                        EmailSentSuccessfully = MailModule.Send(MailModule.SmtpHost, MailModule.SmtpPort, message, MailModule.EnableSsl);
+
+                        // Flag service to resend if an error occured when sending mail.
+                        ResendMail = !EmailSentSuccessfully;
+
+                        // Queue previously unsent mail.
+                        if (ResendMail)
+                        {
+                            MailMessages.Add(message);
+                        }
+
                         // Write to logs.
-                        File.AppendAllText(LogFilePath + $@"{ DateTime.Now:(yyyy-MM-dd)}.log", $@"{DateTime.Now} - External Ip Address has changed to: {WebResponse}{Environment.NewLine}");
-                        File.AppendAllText(LogFilePath + $@"{ DateTime.Now:(yyyy-MM-dd)}.log", $@"{DateTime.Now} - Email sent out to: {MailModule.EmailTo}{Environment.NewLine}{Environment.NewLine}");
+                        File.AppendAllText(LogFilePath + $@"{DateTime.Now:(yyyy-MM-dd)}.log",
+                                           EmailSentSuccessfully
+                                               ? $@"{DateTime.Now} - Email sent out to: {MailModule.EmailTo}{Environment.NewLine}{Environment.NewLine}"
+                                               : $@"{DateTime.Now} - Email failed to send out to: {MailModule.EmailTo}{Environment.NewLine}{Environment.NewLine}");
                     }
 
                     WebResponse = null;

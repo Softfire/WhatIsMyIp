@@ -11,7 +11,7 @@ namespace WhatIsMyIp.Modules
         /// Set FTP External Firewall IP.
         /// </summary>
         /// <param name="newIpAddress">The new ip address to use.</param>
-        public static void SetFTPExternalFirewallIp(IPAddress newIpAddress)
+        public static void SetFtpExternalFirewallIp(IPAddress newIpAddress)
         {
             if (newIpAddress != null)
             {

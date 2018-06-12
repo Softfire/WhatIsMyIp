@@ -2,7 +2,6 @@
 using System.Collections;
 using System.ComponentModel;
 using System.Configuration.Install;
-using System.Diagnostics;
 using System.IO;
 using System.Security;
 using System.ServiceProcess;

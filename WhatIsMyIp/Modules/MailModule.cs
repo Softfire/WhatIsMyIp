@@ -2,6 +2,7 @@
 using System.Net.Mail;
 using System.Net.Mime;
 using System.Security;
+using System.Threading.Tasks;
 
 namespace WhatIsMyIp.Modules
 {
@@ -61,56 +62,98 @@ namespace WhatIsMyIp.Modules
         /// </summary>
         /// <param name="emailHost">The SMTP host.</param>
         /// <param name="emailHostPort">The SMTP port.</param>
+        /// <param name="message">The message to send.</param>
+        /// <param name="useSsl">Flag whether the email host requires SSL.</param>
+        /// <param name="template">HTML template to use in email notification.</param>
+        /// <returns>Returns a Task indicating whether the message was sent.</returns>
+        public static bool Send(string emailHost, int emailHostPort,
+                                MailMessage message,
+                                bool useSsl, Templates template = Templates.None)
+        {
+            // Send to all in To field.
+            foreach (var recipient in message.To)
+            {
+                if (Send(emailHost, emailHostPort, recipient.Address, message.From.Address, message.Subject, message.Body, useSsl, template).IsCompleted == false)
+                {
+                    return false;
+                }
+            }
+
+            // Send to all in Cc field.
+            foreach (var recipient in message.CC)
+            {
+                if (Send(emailHost, emailHostPort, recipient.Address, message.From.Address, message.Subject, message.Body, useSsl, template).IsCompleted == false)
+                {
+                    return false;
+                }
+            }
+
+            // Send to all in Bcc field.
+            foreach (var recipient in message.Bcc)
+            {
+                if (Send(emailHost, emailHostPort, recipient.Address, message.From.Address, message.Subject, message.Body, useSsl, template).IsCompleted == false)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Send.
+        /// </summary>
+        /// <param name="emailHost">The SMTP host.</param>
+        /// <param name="emailHostPort">The SMTP port.</param>
         /// <param name="emailTo">The recipient's email address.</param>
         /// <param name="emailFrom">The sender's email address.</param>
         /// <param name="emailSubject">The mail's subject.</param>
         /// <param name="emailBody">The mail's body.</param>
         /// <param name="useSsl">Flag whether the email host requires SSL.</param>
         /// <param name="template">HTML template to use in email notification.</param>
-        /// <returns>Returns a bool indicating whether the message was sent.</returns>
-        public static bool Send(string emailHost, int emailHostPort,
+        /// <returns>Returns a Task indicating whether the message was sent.</returns>
+        public static Task Send(string emailHost, int emailHostPort,
                                 string emailTo, string emailFrom,
                                 string emailSubject, string emailBody,
                                 bool useSsl, Templates template = Templates.None)
         {
-            if (string.IsNullOrWhiteSpace(emailHost) == false &&
-                emailHostPort > 0 &&
-                string.IsNullOrWhiteSpace(emailTo) == false &&
-                string.IsNullOrWhiteSpace(emailFrom) == false &&
-                string.IsNullOrWhiteSpace(emailSubject) == false &&
-                string.IsNullOrEmpty(emailBody) == false)
+            return Task.Run(async () =>
             {
-                // Create mail client.
-                using (var client = new SmtpClient(emailHost, emailHostPort)
+                if (string.IsNullOrWhiteSpace(emailHost) == false &&
+                    emailHostPort > 0 &&
+                    string.IsNullOrWhiteSpace(emailTo) == false &&
+                    string.IsNullOrWhiteSpace(emailFrom) == false &&
+                    string.IsNullOrWhiteSpace(emailSubject) == false &&
+                    string.IsNullOrEmpty(emailBody) == false)
                 {
-                    DeliveryMethod = SmtpDeliveryMethod.Network,
-                    UseDefaultCredentials = string.IsNullOrWhiteSpace(SmtpClientUsername) && SmtpClientPassword == null,
-                    Credentials = string.IsNullOrWhiteSpace(SmtpClientUsername) && SmtpClientPassword == null ? new NetworkCredential(SmtpClientUsername, SmtpClientPassword) : null,
-                    EnableSsl = useSsl
-                })
-                {
-                    using (var mail = new MailMessage(emailFrom, emailTo, emailSubject, emailBody))
+                    // Create mail client.
+                    using (var client = new SmtpClient(emailHost, emailHostPort)
                     {
-                        // Use mail message template.
-                        switch (template)
+                        DeliveryMethod = SmtpDeliveryMethod.Network,
+                        UseDefaultCredentials = string.IsNullOrWhiteSpace(SmtpClientUsername) && SmtpClientPassword == null,
+                        Credentials = string.IsNullOrWhiteSpace(SmtpClientUsername) && SmtpClientPassword == null ? new NetworkCredential(SmtpClientUsername, SmtpClientPassword) : null,
+                        EnableSsl = useSsl
+                    })
+                    {
+                        using (var mail = new MailMessage(emailFrom, emailTo, emailSubject, emailBody))
                         {
-                            case Templates.None:
-                                break;
-                            case Templates.IIS:
-                                mail.IsBodyHtml = true;
-                                mail.AlternateViews.Add(AlternateView.CreateAlternateViewFromString(TemplateIIS(), new ContentType("text/html")));
-                                break;
+                            // Use mail message template.
+                            switch (template)
+                            {
+                                case Templates.None:
+                                    break;
+                                case Templates.IIS:
+                                    mail.IsBodyHtml = true;
+                                    mail.AlternateViews.Add(AlternateView.CreateAlternateViewFromString(TemplateIIS(), new ContentType("text/html")));
+                                    break;
+                            }
+
+                            // Send message.
+                            await client.SendMailAsync(mail);
                         }
-
-                        // Send message.
-                        client.Send(mail);
                     }
-
-                    return true;
                 }
-            }
-
-            return false;
+            });
         }
 
         /// <summary>
@@ -146,7 +189,7 @@ namespace WhatIsMyIp.Modules
             Properties.Settings.Default.SmtpClientUsername = SmtpClientUsername;
 
             // TODO: Encrypt password.
-            //Properties.Settings.Default.SmtpClientPassword = Ecrypt(SmtpClientPassword);
+            //Properties.Settings.Default.SmtpClientPassword = Encrypt(SmtpClientPassword);
 
             // Save settings.
             Properties.Settings.Default.Save();
