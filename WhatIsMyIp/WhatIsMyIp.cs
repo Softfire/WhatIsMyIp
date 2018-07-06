@@ -49,11 +49,6 @@ namespace WhatIsMyIp
         internal static int WatchInterval { get; set; } = 300000;
 
         /// <summary>
-        /// Email Sent Successfully.
-        /// </summary>
-        internal static bool EmailSentSuccessfully { get; set; }
-
-        /// <summary>
         /// Resend Mail.
         /// </summary>
         internal static bool ResendMail { get; set; }
@@ -256,10 +251,8 @@ namespace WhatIsMyIp
                         var message = new MailMessage(MailModule.EmailFrom, MailModule.EmailTo, "What Is My Ip - Error!", $"External IP Web Response was '{WebResponse}'.");
 
                         // Send mail.
-                        EmailSentSuccessfully = MailModule.Send(MailModule.SmtpHost, MailModule.SmtpPort, message, MailModule.EnableSsl);
-
                         // Flag service to resend if an error occured when sending mail.
-                        ResendMail = !EmailSentSuccessfully;
+                        ResendMail = !MailModule.Send(MailModule.SmtpHost, MailModule.SmtpPort, message, MailModule.EnableSsl);
 
                         // Queue previously unsent mail.
                         if (ResendMail)
@@ -307,18 +300,16 @@ namespace WhatIsMyIp
                         }
 
                         // Notify admin of IP change.
-                        EmailSentSuccessfully = MailModule.Send(MailModule.SmtpHost, MailModule.SmtpPort, MailModule.EmailTo, MailModule.EmailFrom,
+                        var emailSentSuccessfully = MailModule.Send(MailModule.SmtpHost, MailModule.SmtpPort, MailModule.EmailTo, MailModule.EmailFrom,
                                                                 "What Is My Ip - IP Address Change!", $"External IP changed to: {WebResponse}", MailModule.EnableSsl)
                                                                 .IsCompleted;
 
                         // Prepare mail message to send.
                         var message = new MailMessage(MailModule.EmailFrom, MailModule.EmailTo, "What Is My Ip - IP Address Change!", $"External IP changed to: {WebResponse}");
 
-                        // Send Mail
-                        EmailSentSuccessfully = MailModule.Send(MailModule.SmtpHost, MailModule.SmtpPort, message, MailModule.EnableSsl);
-
+                        // Send Mail.
                         // Flag service to resend if an error occured when sending mail.
-                        ResendMail = !EmailSentSuccessfully;
+                        ResendMail = !MailModule.Send(MailModule.SmtpHost, MailModule.SmtpPort, message, MailModule.EnableSsl);
 
                         // Queue previously unsent mail.
                         if (ResendMail)
@@ -328,7 +319,7 @@ namespace WhatIsMyIp
 
                         // Write to logs.
                         File.AppendAllText(LogFilePath + $@"{DateTime.Now:(yyyy-MM-dd)}.log",
-                                           EmailSentSuccessfully
+                                           emailSentSuccessfully
                                                ? $@"{DateTime.Now} - Email sent out to: {MailModule.EmailTo}{Environment.NewLine}{Environment.NewLine}"
                                                : $@"{DateTime.Now} - Email failed to send out to: {MailModule.EmailTo}{Environment.NewLine}{Environment.NewLine}");
                     }
