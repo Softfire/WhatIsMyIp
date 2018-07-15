@@ -54,6 +54,11 @@ namespace WhatIsMyIp
         internal static bool ResendMail { get; set; }
 
         /// <summary>
+        /// Resend To Addresses.
+        /// </summary>
+        internal static List<string> ResendToAddresses { get; set; }
+
+        /// <summary>
         /// Mail Messages.
         /// </summary>
         internal static List<MailMessage> MailMessages { get; set; }
@@ -224,15 +229,12 @@ namespace WhatIsMyIp
             try
             {
                 // Send any unsent mail.
-                if (ResendMail)
+                for (var i = 0; i < MailMessages.Count; i++)
                 {
-                    for (var i = 0; i < MailMessages.Count; i++)
+                    var message = MailMessages[i];
+                    if (MailModule.Send(MailModule.SmtpHost, MailModule.SmtpPort, message, MailModule.EnableSsl).Count == 0)
                     {
-                        var message = MailMessages[i];
-                        if (MailModule.Send(MailModule.SmtpHost, MailModule.SmtpPort, message, MailModule.EnableSsl))
-                        {
-                            MailMessages.Remove(message);
-                        }
+                        MailMessages.Remove(message);
                     }
                 }
 
@@ -252,13 +254,26 @@ namespace WhatIsMyIp
 
                         // Send mail.
                         // Flag service to resend if an error occured when sending mail.
-                        ResendMail = !MailModule.Send(MailModule.SmtpHost, MailModule.SmtpPort, message, MailModule.EnableSsl);
-
+                        ResendToAddresses = MailModule.Send(MailModule.SmtpHost, MailModule.SmtpPort, message, MailModule.EnableSsl);
+                        
                         // Queue previously unsent mail.
-                        if (ResendMail)
+                        if (ResendToAddresses.Count > 0)
                         {
                             MailMessages.Add(message);
                         }
+                        else
+                        {
+                            // Write to logs.
+                            File.AppendAllText(LogFilePath + $@"{DateTime.Now:(yyyy-MM-dd)}.log", $@"{DateTime.Now} - Email sent out to: {MailModule.EmailTo}{Environment.NewLine}");
+                        }
+
+                        foreach (var address in ResendToAddresses)
+                        {
+                            File.AppendAllText(LogFilePath + $@"{DateTime.Now:(yyyy-MM-dd)}.log", $@"{DateTime.Now} - Email failed to send out to: {address}{Environment.NewLine}");
+                        }
+
+                        // Clear Addresses.
+                        ResendToAddresses.Clear();
                     }
                 }
 
@@ -299,29 +314,31 @@ namespace WhatIsMyIp
                             IISModule.SetFtpExternalFirewallIp(NewExternalIpAddress);
                         }
 
-                        // Notify admin of IP change.
-                        var emailSentSuccessfully = MailModule.Send(MailModule.SmtpHost, MailModule.SmtpPort, MailModule.EmailTo, MailModule.EmailFrom,
-                                                                "What Is My Ip - IP Address Change!", $"External IP changed to: {WebResponse}", MailModule.EnableSsl)
-                                                                .IsCompleted;
-
                         // Prepare mail message to send.
                         var message = new MailMessage(MailModule.EmailFrom, MailModule.EmailTo, "What Is My Ip - IP Address Change!", $"External IP changed to: {WebResponse}");
 
                         // Send Mail.
                         // Flag service to resend if an error occured when sending mail.
-                        ResendMail = !MailModule.Send(MailModule.SmtpHost, MailModule.SmtpPort, message, MailModule.EnableSsl);
-
+                        ResendToAddresses = MailModule.Send(MailModule.SmtpHost, MailModule.SmtpPort, message, MailModule.EnableSsl);
+                        
                         // Queue previously unsent mail.
-                        if (ResendMail)
+                        if (ResendToAddresses.Count > 0)
                         {
                             MailMessages.Add(message);
                         }
+                        else
+                        {
+                            // Write to logs.
+                            File.AppendAllText(LogFilePath + $@"{DateTime.Now:(yyyy-MM-dd)}.log", $@"{DateTime.Now} - Email sent out to: {MailModule.EmailTo}{Environment.NewLine}");
+                        }
 
-                        // Write to logs.
-                        File.AppendAllText(LogFilePath + $@"{DateTime.Now:(yyyy-MM-dd)}.log",
-                                           emailSentSuccessfully
-                                               ? $@"{DateTime.Now} - Email sent out to: {MailModule.EmailTo}{Environment.NewLine}{Environment.NewLine}"
-                                               : $@"{DateTime.Now} - Email failed to send out to: {MailModule.EmailTo}{Environment.NewLine}{Environment.NewLine}");
+                        foreach (var address in ResendToAddresses)
+                        {
+                            File.AppendAllText(LogFilePath + $@"{DateTime.Now:(yyyy-MM-dd)}.log", $@"{DateTime.Now} - Email failed to send out to: {address}{Environment.NewLine}");
+                        }
+
+                        // Clear Addresses.
+                        ResendToAddresses.Clear();
                     }
 
                     WebResponse = null;

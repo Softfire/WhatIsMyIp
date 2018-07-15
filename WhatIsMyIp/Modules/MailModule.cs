@@ -1,4 +1,6 @@
-﻿using System.Net;
+﻿using System;
+using System.Collections.Generic;
+using System.Net;
 using System.Net.Mail;
 using System.Net.Mime;
 using System.Security;
@@ -66,38 +68,38 @@ namespace WhatIsMyIp.Modules
         /// <param name="useSsl">Flag whether the email host requires SSL.</param>
         /// <param name="template">HTML template to use in email notification.</param>
         /// <returns>Returns a Task indicating whether the message was sent.</returns>
-        public static bool Send(string emailHost, int emailHostPort,
-                                MailMessage message,
-                                bool useSsl, Templates template = Templates.None)
+        public static List<string> Send(string emailHost, int emailHostPort, MailMessage message, bool useSsl, Templates template = Templates.None)
         {
+            var addresses = new List<string>();
+
             // Send to all in To field.
             foreach (var recipient in message.To)
             {
-                if (Send(emailHost, emailHostPort, recipient.Address, message.From.Address, message.Subject, message.Body, useSsl, template).IsCompleted == false)
+                if (Send(emailHost, emailHostPort, recipient.Address, message.From.Address, message.Subject, message.Body, useSsl, template).IsFaulted)
                 {
-                    return false;
+                    addresses.Add($"To: {recipient.Address}");
                 }
             }
 
             // Send to all in Cc field.
             foreach (var recipient in message.CC)
             {
-                if (Send(emailHost, emailHostPort, recipient.Address, message.From.Address, message.Subject, message.Body, useSsl, template).IsCompleted == false)
+                if (Send(emailHost, emailHostPort, recipient.Address, message.From.Address, message.Subject, message.Body, useSsl, template).IsFaulted)
                 {
-                    return false;
+                    addresses.Add($"Cc: {recipient.Address}");
                 }
             }
 
             // Send to all in Bcc field.
             foreach (var recipient in message.Bcc)
             {
-                if (Send(emailHost, emailHostPort, recipient.Address, message.From.Address, message.Subject, message.Body, useSsl, template).IsCompleted == false)
+                if (Send(emailHost, emailHostPort, recipient.Address, message.From.Address, message.Subject, message.Body, useSsl, template).IsFaulted)
                 {
-                    return false;
+                    addresses.Add($"Bcc: {recipient.Address}");
                 }
             }
 
-            return true;
+            return addresses;
         }
 
         /// <summary>
