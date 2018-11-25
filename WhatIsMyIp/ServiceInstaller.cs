@@ -45,10 +45,10 @@ namespace WhatIsMyIp
                 (bool, bool) boolResult;
 
                 // Setup loop.
-                while (setupIsComplete == false)
+                while (!setupIsComplete)
                 {
                     // Set Service Host loop.
-                    while (serviceHostIsSet == false)
+                    while (!serviceHostIsSet)
                     {
                         // If input is accepted, assign to property.
                         if ((stringResult = Support.ConfirmStringInput(@"Service Host: ", @"Set service host from which to retrieve the external ip.", Support.DisplaySetupHeader)).Item1)
@@ -59,7 +59,7 @@ namespace WhatIsMyIp
                     }
 
                     // Set Email To loop.
-                    while (emailToIsSet == false)
+                    while (!emailToIsSet)
                     {
                         // If input is accepted, assign to property.
                         if ((stringResult = Support.ConfirmStringInput(@"Email To: ", @"Set recipient email address for notifications.", Support.DisplaySetupHeader)).Item1)
@@ -70,7 +70,7 @@ namespace WhatIsMyIp
                     }
 
                     // Set Email From loop.
-                    while (emailFromIsSet == false)
+                    while (!emailFromIsSet)
                     {
                         // If input is accepted, assign to property.
                         if ((stringResult = Support.ConfirmStringInput(@"Email From: ", @"Set sender email address for notifications.", Support.DisplaySetupHeader)).Item1)
@@ -81,7 +81,7 @@ namespace WhatIsMyIp
                     }
 
                     // Set Smtp Host loop.
-                    while (emailHostIsSet == false)
+                    while (!emailHostIsSet)
                     {
                         // If input is accepted, assign to property.
                         if ((stringResult = Support.ConfirmStringInput(@"SMTP Host: ", @"Set SMTP host for email notifications.", Support.DisplaySetupHeader)).Item1)
@@ -92,7 +92,7 @@ namespace WhatIsMyIp
                     }
 
                     // Set Smtp Port loop.
-                    while (emailPortIsSet == false)
+                    while (!emailPortIsSet)
                     {
                         // If input is accepted, assign to property.
                         if ((intResult = Support.ConfirmIntInput(@"SMTP Port: ", @"Set SMTP port to use for email notifications.", Support.DisplaySetupHeader)).Item1)
@@ -103,7 +103,7 @@ namespace WhatIsMyIp
                     }
 
                     // Set SSL loop.
-                    while (emailSslIsSet == false)
+                    while (!emailSslIsSet)
                     {
                         // If input is accepted, assign to property.
                         if ((boolResult = Support.ConfirmBoolInput(@"Email SSL Enabled: ", @"Set SSL for SMTP email notifications.", Support.DisplaySetupHeader)).Item1)
@@ -114,7 +114,7 @@ namespace WhatIsMyIp
                     }
 
                     // Set Log File Path loop.
-                    while (logFilePathIsSet == false)
+                    while (!logFilePathIsSet)
                     {
                         // If input is accepted, assign to property.
                         if ((stringResult = Support.ConfirmStringInput(@"Log File Path: ", $@"Set File Path for Logs. Eg. ""C:\{nameof(WhatIsMyIp)}\Logs""", Support.DisplaySetupHeader)).Item1)
@@ -131,7 +131,7 @@ namespace WhatIsMyIp
                     }
 
                     // Set Watch Interval loop.
-                    while (watchIntervalIsSet == false)
+                    while (!watchIntervalIsSet)
                     {
                         // If input is accepted, assign to property.
                         if ((intResult = Support.ConfirmIntInput(@"Interval: ", $@"Set Interval between calls for IP detection in milliseconds.{Environment.NewLine}Eg. 300000 = 5 mins.", Support.DisplaySetupHeader)).Item1)
@@ -142,7 +142,7 @@ namespace WhatIsMyIp
                     }
 
                     // Set SMTP Client credentials loop.
-                    while (smtpClientCredentialsAreSet == false)
+                    while (!smtpClientCredentialsAreSet)
                     {
                         var usernameIsSet = false;
                         var passwordIsSet = false;

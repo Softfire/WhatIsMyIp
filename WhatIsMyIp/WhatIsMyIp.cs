@@ -30,7 +30,7 @@ namespace WhatIsMyIp
         /// <summary>
         /// Web Response.
         /// </summary>
-        private static string WebResponse { get; set; }
+        private static WebResponse WebResponse { get; set; }
 
         /// <summary>
         /// Log File Path.
@@ -242,15 +242,15 @@ namespace WhatIsMyIp
                 using (var wc = new WebClient())
                 {
                     // Call out to the Service Host for the external ip being used by the current network.
-                    WebResponse = wc.DownloadString(MailModule.ServiceHost);
+                    WebResponse = Support.GetJsonContent<WebResponse>(wc.DownloadString(MailModule.ServiceHost));
 
                     // If the response is null or empty send an email to the admin(s) to check for errors.
-                    if (string.IsNullOrWhiteSpace(WebResponse))
+                    if (WebResponse == null)
                     {
-                        File.AppendAllText(LogFilePath + $@"{ DateTime.Now:(yyyy-MM-dd)}.log", $@"{DateTime.Now} - An error occured: The web response from {MailModule.ServiceHost} was '{WebResponse}'.{Environment.NewLine}{Environment.NewLine}");
+                        File.AppendAllText(LogFilePath + $@"{ DateTime.Now:(yyyy-MM-dd)}.log", $@"{DateTime.Now} - An error occured: The web response from {MailModule.ServiceHost} was '{null}'.{Environment.NewLine}{Environment.NewLine}");
 
                         // Prepare mail message to send.
-                        var message = new MailMessage(MailModule.EmailFrom, MailModule.EmailTo, "What Is My Ip - Error!", $"External IP Web Response was '{WebResponse}'.");
+                        var message = new MailMessage(MailModule.EmailFrom, MailModule.EmailTo, "What Is My Ip - Error!", $"External IP Web Response was '{null}'.");
 
                         // Send mail.
                         // Flag service to resend if an error occured when sending mail.
@@ -278,13 +278,13 @@ namespace WhatIsMyIp
                 }
 
                 // Check for a response.
-                if (string.IsNullOrWhiteSpace(WebResponse) == false)
+                if (WebResponse != null)
                 {
                     // If current ip is null, which should not happen unless the registry entry is not set properly,
                     // then parse the web response and update the registry.
                     if (CurrentExternalIp == null)
                     {
-                        CurrentExternalIp = NewExternalIpAddress = IPAddress.Parse(WebResponse);
+                        CurrentExternalIp = NewExternalIpAddress = IPAddress.Parse(WebResponse.IpAddress);
 
                         // Push to registry.
                         UpdateCurrentExternalIpRegistryEntry();
@@ -294,11 +294,11 @@ namespace WhatIsMyIp
                     }
                     else
                     {
-                        NewExternalIpAddress = IPAddress.Parse(WebResponse);
+                        NewExternalIpAddress = IPAddress.Parse(WebResponse.IpAddress);
                     }
 
                     // Process new ip, if changed.
-                    if (CurrentExternalIp.Equals(NewExternalIpAddress) == false)
+                    if (!CurrentExternalIp.Equals(NewExternalIpAddress))
                     {
                         CurrentExternalIp = NewExternalIpAddress;
 
@@ -315,7 +315,7 @@ namespace WhatIsMyIp
                         }
 
                         // Prepare mail message to send.
-                        var message = new MailMessage(MailModule.EmailFrom, MailModule.EmailTo, "What Is My Ip - IP Address Change!", $"External IP changed to: {WebResponse}");
+                        var message = new MailMessage(MailModule.EmailFrom, MailModule.EmailTo, "What Is My Ip - IP Address Change!", $"External IP changed to: {WebResponse.IpAddress}");
 
                         // Send Mail.
                         // Flag service to resend if an error occured when sending mail.
@@ -347,7 +347,7 @@ namespace WhatIsMyIp
             catch (Exception ex)
             {
                 // Output exception details.
-                if (string.IsNullOrWhiteSpace(LogFilePath) == false)
+                if (!string.IsNullOrWhiteSpace(LogFilePath))
                 {
                     File.AppendAllText(LogFilePath + $@"{ DateTime.Now:(yyyy-MM-dd)}.log", $@"{DateTime.Now} - An error occured: {ex}{Environment.NewLine}{Environment.NewLine}");
                 }
@@ -415,15 +415,15 @@ namespace WhatIsMyIp
                             IPAddress.TryParse(parametersSubKey.GetValue(nameof(CurrentExternalIp)).ToString(), out var currentExternalIp);
                             var serviceFilePath = parametersSubKey.GetValue(nameof(ServiceFilePath)).ToString();
 
-                            if (string.IsNullOrWhiteSpace(serviceHost) == false &&
-                                string.IsNullOrWhiteSpace(emailTo) == false &&
-                                string.IsNullOrWhiteSpace(emailFrom) == false &&
-                                string.IsNullOrWhiteSpace(emailHost) == false &&
+                            if (!string.IsNullOrWhiteSpace(serviceHost) &&
+                                !string.IsNullOrWhiteSpace(emailTo) &&
+                                !string.IsNullOrWhiteSpace(emailFrom) &&
+                                !string.IsNullOrWhiteSpace(emailHost) &&
                                 emailPort > 0 &&
-                                string.IsNullOrWhiteSpace(logFilePath) == false &&
+                                !string.IsNullOrWhiteSpace(logFilePath) &&
                                 watchInterval > 0 &&
                                 currentExternalIp != null &&
-                                string.IsNullOrWhiteSpace(serviceFilePath) == false)
+                                !string.IsNullOrWhiteSpace(serviceFilePath) )
                             {
                                 MailModule.ServiceHost = serviceHost;
                                 MailModule.EmailTo = emailTo;
@@ -457,7 +457,7 @@ namespace WhatIsMyIp
             catch (Exception ex)
             {
                 // Output exception details.
-                if (string.IsNullOrWhiteSpace(LogFilePath) == false)
+                if (!string.IsNullOrWhiteSpace(LogFilePath) )
                 {
                     File.AppendAllText(LogFilePath + $@"{ DateTime.Now:(yyyy-MM-dd)}.log", $@"{DateTime.Now} - An error occured: {ex}{Environment.NewLine}{Environment.NewLine}");
                 }
@@ -488,13 +488,13 @@ namespace WhatIsMyIp
 
                         // Confirm inputs.
                         if (registryEntry != null &&
-                            string.IsNullOrWhiteSpace(MailModule.ServiceHost) == false &&
-                            string.IsNullOrWhiteSpace(MailModule.EmailTo) == false &&
-                            string.IsNullOrWhiteSpace(MailModule.EmailFrom) == false &&
-                            string.IsNullOrWhiteSpace(MailModule.SmtpHost) == false && MailModule.SmtpPort > 0 &&
-                            string.IsNullOrWhiteSpace(LogFilePath) == false &&
+                            !string.IsNullOrWhiteSpace(MailModule.ServiceHost) &&
+                            !string.IsNullOrWhiteSpace(MailModule.EmailTo) &&
+                            !string.IsNullOrWhiteSpace(MailModule.EmailFrom) &&
+                            !string.IsNullOrWhiteSpace(MailModule.SmtpHost) && MailModule.SmtpPort > 0 &&
+                            !string.IsNullOrWhiteSpace(LogFilePath) &&
                             WatchInterval >= 0 &&
-                            string.IsNullOrWhiteSpace(ServiceFilePath) == false)
+                            !string.IsNullOrWhiteSpace(ServiceFilePath))
                         {
                             // Update progress.
                             Console.WriteLine(@"Creating Parameters SubKey in Registry for service...");
@@ -541,7 +541,7 @@ namespace WhatIsMyIp
             catch (Exception ex)
             {
                 // Output exception details.
-                if (string.IsNullOrWhiteSpace(LogFilePath) == false)
+                if (!string.IsNullOrWhiteSpace(LogFilePath))
                 {
                     File.AppendAllText(LogFilePath + $@"{ DateTime.Now:(yyyy-MM-dd)}.log", $@"{DateTime.Now} - An error occured: {ex}{Environment.NewLine}{Environment.NewLine}");
                 }
@@ -574,7 +574,7 @@ namespace WhatIsMyIp
             catch (Exception ex)
             {
                 // Output exception details.
-                if (string.IsNullOrWhiteSpace(LogFilePath) == false)
+                if (!string.IsNullOrWhiteSpace(LogFilePath))
                 {
                     File.AppendAllText(LogFilePath + $@"{ DateTime.Now:(yyyy-MM-dd)}.log", $@"{DateTime.Now} - An error occured: {ex}{Environment.NewLine}{Environment.NewLine}");
                 }
@@ -627,7 +627,7 @@ namespace WhatIsMyIp
             catch (Exception ex)
             {
                 // Output exception details.
-                if (string.IsNullOrWhiteSpace(LogFilePath) == false)
+                if (!string.IsNullOrWhiteSpace(LogFilePath))
                 {
                     File.AppendAllText(LogFilePath + $@"{ DateTime.Now:(yyyy-MM-dd)}.log", $@"{DateTime.Now} - An error occured: {ex}{Environment.NewLine}{Environment.NewLine}");
                 }

@@ -121,12 +121,12 @@ namespace WhatIsMyIp.Modules
         {
             return Task.Run(async () =>
             {
-                if (string.IsNullOrWhiteSpace(emailHost) == false &&
+                if (!string.IsNullOrWhiteSpace(emailHost) &&
                     emailHostPort > 0 &&
-                    string.IsNullOrWhiteSpace(emailTo) == false &&
-                    string.IsNullOrWhiteSpace(emailFrom) == false &&
-                    string.IsNullOrWhiteSpace(emailSubject) == false &&
-                    string.IsNullOrEmpty(emailBody) == false)
+                    !string.IsNullOrWhiteSpace(emailTo) &&
+                    !string.IsNullOrWhiteSpace(emailFrom) &&
+                    !string.IsNullOrWhiteSpace(emailSubject) &&
+                    !string.IsNullOrEmpty(emailBody))
                 {
                     // Create mail client.
                     using (var client = new SmtpClient(emailHost, emailHostPort)

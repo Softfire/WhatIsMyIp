@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Security;
+using Newtonsoft.Json;
 
 namespace WhatIsMyIp
 {
@@ -40,7 +41,7 @@ namespace WhatIsMyIp
             Console.Write(propertyTitle);
             var input = Console.ReadLine();
 
-            if (string.IsNullOrWhiteSpace(input) == false)
+            if (!string.IsNullOrWhiteSpace(input))
             {
                 Console.WriteLine($@"Is ({input}) correct?{Environment.NewLine}Press Enter to continue. Any other key to reset setting.");
                 var response = Console.ReadKey();
@@ -120,7 +121,7 @@ namespace WhatIsMyIp
             {
                 var input = Console.ReadLine();
 
-                if (string.IsNullOrEmpty(input) == false)
+                if (!string.IsNullOrEmpty(input))
                 {
                     valid = bool.TryParse(input, out value);
                 }
@@ -207,12 +208,12 @@ namespace WhatIsMyIp
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(filePath) == false)
+                if (!string.IsNullOrWhiteSpace(filePath))
                 {
                     var fi = new FileInfo(filePath);
 
                     if (fi.Directory != null &&
-                        fi.Directory.Exists == false &&
+                        !fi.Directory.Exists &&
                         fi.DirectoryName != null)
                     {
                         Directory.CreateDirectory(fi.DirectoryName);
@@ -233,6 +234,17 @@ namespace WhatIsMyIp
                     File.AppendAllText(WhatIsMyIp.LogFilePath + $@"{ DateTime.Now:(yyyy-MM-dd)}.log", $@"{DateTime.Now} - An error occured: {ex}{Environment.NewLine}{Environment.NewLine}");
                 }
             }
+        }
+
+        /// <summary>
+        /// Deserializes the JSON object.
+        /// </summary>
+        /// <typeparam name="T">The type of object to deserialize the JSON object into.</typeparam>
+        /// <param name="jsonAsString">The JSON object as a string.</param>
+        /// <returns>Returns an object of Type <see cref="T"/>.</returns>
+        public static T GetJsonContent<T>(string jsonAsString)
+        {
+            return JsonConvert.DeserializeObject<T>(jsonAsString);
         }
     }
 }
